@@ -181,6 +181,36 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     setShowPlayerTrails(prev => !prev);
   }, []);
 
+
+  const demoAddCourtStep = useCallback(() => {
+    const current = positionHistory[currentIndex];
+    if (!current) return;
+    const offset = positionHistory.length * 15;
+    const next = {
+      players: {
+        team1: current.players.team1.map((pos) => ({ x: pos.x + offset, y: pos.y + offset * 0.5 })),
+        team2: current.players.team2.map((pos) => ({ x: pos.x - offset * 0.5, y: pos.y + offset })),
+      },
+      shuttle: { x: current.shuttle.x + offset * 0.8, y: current.shuttle.y - offset * 0.3 },
+    };
+    const newState = drillStepToPositionState(next, {
+      players: current.players,
+      shuttle: current.shuttle,
+    });
+    setPositionHistory((prev) => [...prev, newState]);
+    setCurrentIndex((prev) => prev + 1);
+    setTempPosition(null);
+  }, [currentIndex, positionHistory]);
+
+  useEffect(() => {
+    if (typeof globalThis !== 'undefined' && __DEV__) {
+      (globalThis as { __demoAddCourtStep?: () => void }).__demoAddCourtStep = demoAddCourtStep;
+      return () => {
+        delete (globalThis as { __demoAddCourtStep?: () => void }).__demoAddCourtStep;
+      };
+    }
+  }, [demoAddCourtStep]);
+
   const toggleShuttleTrail = useCallback(() => {
     setShowShuttleTrail(prev => !prev);
   }, []);
