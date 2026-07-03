@@ -22,7 +22,21 @@
       },
       "package": "com.haritabhgupta.badmintoncourtsimulator",
       "versionCode": 7,
-      "permissions": []
+      "permissions": [],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "badmlabs.github.io",
+              "pathPrefix": "/court/import"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/logo.png"

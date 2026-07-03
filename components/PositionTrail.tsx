@@ -9,17 +9,15 @@ interface PositionTrailProps {
 }
 
 export function PositionTrail({ currentPosition, ghostPosition, color }: PositionTrailProps) {
-  // Trails are always visible - no complex state management needed
-
   // Calculate the angle and length of the line
   const dx = currentPosition.x - ghostPosition.x;
   const dy = currentPosition.y - ghostPosition.y;
   const angle = Math.atan2(dy, dx) * (180 / Math.PI);
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  // Create dots for the trail
-  const DOT_SIZE = 4;
-  const DOT_SPACING = 10;
+  // Create dots for the trail, fading toward the ghost (older) end
+  const DOT_SIZE = 5;
+  const DOT_SPACING = 12;
   const numberOfDots = Math.floor(length / DOT_SPACING);
   const dots = Array.from({ length: numberOfDots }, (_, i) => (
     <View
@@ -32,7 +30,7 @@ export function PositionTrail({ currentPosition, ghostPosition, color }: Positio
           backgroundColor: color,
           width: DOT_SIZE,
           height: DOT_SIZE,
-          opacity: 0.7,
+          opacity: 0.25 + 0.6 * ((i + 1) / Math.max(numberOfDots, 1)),
         },
       ]}
     />
@@ -47,12 +45,14 @@ export function PositionTrail({ currentPosition, ghostPosition, color }: Positio
           {
             left: ghostPosition.x,
             top: ghostPosition.y,
-            backgroundColor: color,
-            borderColor: color === '#ffffff' ? '#000000' : 'white',
-            opacity: 0.5,
+            borderColor: color,
+            backgroundColor: 'transparent',
+            opacity: 0.65,
           },
         ]}
-      />
+      >
+        <View style={[styles.ghostCore, { backgroundColor: color }]} />
+      </View>
     </>
   );
 }
@@ -60,9 +60,7 @@ export function PositionTrail({ currentPosition, ghostPosition, color }: Positio
 const styles = StyleSheet.create({
   dot: {
     position: 'absolute',
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
   },
   ghostMarker: {
     position: 'absolute',
@@ -70,5 +68,14 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-}); 
+  ghostCore: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    opacity: 0.8,
+  },
+});

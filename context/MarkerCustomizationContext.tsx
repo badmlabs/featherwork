@@ -25,10 +25,10 @@ interface MarkerCustomizationContextType {
 }
 
 const defaultCustomizations: Customizations = {
-  P1: { size: 40, color: '#ff4444', isLeftHanded: false, icon: 'account', iconType: 'icon' },
-  P2: { size: 40, color: '#ff4444', isLeftHanded: false, icon: 'account', iconType: 'icon' },
-  P3: { size: 40, color: '#4444ff', isLeftHanded: false, icon: 'account', iconType: 'icon' },
-  P4: { size: 40, color: '#4444ff', isLeftHanded: false, icon: 'account', iconType: 'icon' },
+  P1: { size: 40, color: '#ff6b6b', isLeftHanded: false, icon: 'account', iconType: 'icon' },
+  P2: { size: 40, color: '#ff6b6b', isLeftHanded: false, icon: 'account', iconType: 'icon' },
+  P3: { size: 40, color: '#5b8cff', isLeftHanded: false, icon: 'account', iconType: 'icon' },
+  P4: { size: 40, color: '#5b8cff', isLeftHanded: false, icon: 'account', iconType: 'icon' },
   Shuttle: { size: 40, color: '#ffffff', isLeftHanded: false, icon: 'badminton', iconType: 'icon' },
 };
 

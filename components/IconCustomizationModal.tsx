@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, Text, TextInput, Image, ScrollView, Dimensions, Alert } from 'react-native';
-import { Button, Card, Title, Paragraph, Text as PaperText, IconButton } from 'react-native-paper';
+import { View, StyleSheet, Modal, TouchableOpacity, Text, TextInput, Image, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import {
+  markerContentColor,
+  markerRingColor,
+  palette,
+  radii,
+  shadows,
+  spacing,
+} from '../constants/theme';
 
 interface IconCustomizationModalProps {
   visible: boolean;
@@ -33,12 +40,11 @@ export function IconCustomizationModal({
   markerId,
   currentColor
 }: IconCustomizationModalProps) {
-  const [activeTab, setActiveTab] = useState<'icons' | 'text' | 'photo'>(currentType);
+  const [activeTab, setActiveTab] = useState<'icons' | 'text' | 'photo'>(currentType === 'icon' ? 'icons' : currentType);
   const [textInput, setTextInput] = useState(currentType === 'text' ? currentValue : '');
-  const [selectedIcon, setSelectedIcon] = useState(currentType === 'icon' ? currentValue : defaultIcons[markerId]);
   const [selectedImage, setSelectedImage] = useState(currentType === 'photo' ? currentValue : '');
 
-
+  const contentColor = markerContentColor(currentColor);
 
   const pickImage = async () => {
     // Show action sheet to choose between camera and gallery
@@ -102,24 +108,25 @@ export function IconCustomizationModal({
     );
   };
 
+  const previewCircleStyle = [
+    styles.previewCircle,
+    {
+      backgroundColor: currentColor,
+      borderColor: markerRingColor(currentColor),
+    },
+  ];
+
   const renderIconsTab = () => (
     <View style={styles.contentArea}>
-      <PaperText style={styles.contentDescription}>
-        Default icon selected
-      </PaperText>
+      <Text style={styles.contentDescription}>
+        The default icon for this marker
+      </Text>
       <View style={styles.previewContainer}>
-        <PaperText style={styles.previewLabel}>Preview:</PaperText>
-        <View style={[
-          styles.previewCircle, 
-          { 
-            backgroundColor: currentColor,
-            borderColor: currentColor === '#ffffff' ? '#cccccc' : '#e0e0e0'
-          }
-        ]}>
+        <View style={previewCircleStyle}>
           <MaterialCommunityIcons
             name={defaultIcons[markerId] as any}
             size={40}
-            color={currentColor === '#ffffff' ? '#333333' : 'white'}
+            color={contentColor}
           />
         </View>
       </View>
@@ -128,20 +135,15 @@ export function IconCustomizationModal({
 
   const renderTextTab = () => (
     <View style={styles.contentArea}>
-      <PaperText style={styles.contentDescription}>
-        Tap the circle below to enter custom text (max 3 characters)
-      </PaperText>
+      <Text style={styles.contentDescription}>
+        Tap the circle and type up to 3 characters
+      </Text>
       <View style={styles.previewContainer}>
-        <PaperText style={styles.previewLabel}>Preview:</PaperText>
         <TextInput
           style={[
-            styles.previewCircle,
+            ...previewCircleStyle,
             styles.textInputInCircle,
-            { 
-              backgroundColor: currentColor,
-              borderColor: currentColor === '#ffffff' ? '#cccccc' : '#e0e0e0',
-              color: currentColor === '#ffffff' ? '#333333' : 'white'
-            }
+            { color: contentColor },
           ]}
           value={textInput}
           onChangeText={(text) => {
@@ -153,8 +155,9 @@ export function IconCustomizationModal({
           placeholder="ABC"
           maxLength={3}
           textAlign="center"
-          fontSize={20}
-          placeholderTextColor={currentColor === '#ffffff' ? '#999999' : 'rgba(255, 255, 255, 0.7)'}
+          placeholderTextColor={
+            currentColor === '#ffffff' ? 'rgba(11, 17, 30, 0.4)' : 'rgba(255, 255, 255, 0.6)'
+          }
         />
       </View>
     </View>
@@ -162,11 +165,10 @@ export function IconCustomizationModal({
 
   const renderPhotoTab = () => (
     <View style={styles.contentArea}>
-      <PaperText style={styles.contentDescription}>
-        Tap the circle below to select or take a photo
-      </PaperText>
+      <Text style={styles.contentDescription}>
+        Tap the circle to take or choose a photo
+      </Text>
       <View style={styles.previewContainer}>
-        <PaperText style={styles.previewLabel}>Preview:</PaperText>
         <TouchableOpacity
           onPress={async () => {
             await pickImage();
@@ -174,13 +176,7 @@ export function IconCustomizationModal({
               onSave('photo', selectedImage);
             }
           }}
-          style={[
-            styles.previewCircle, 
-            { 
-              backgroundColor: currentColor,
-              borderColor: currentColor === '#ffffff' ? '#cccccc' : '#e0e0e0'
-            }
-          ]}
+          style={previewCircleStyle}
         >
           {selectedImage ? (
             <Image 
@@ -189,34 +185,39 @@ export function IconCustomizationModal({
             />
           ) : (
             <MaterialCommunityIcons
-              name="camera"
+              name="camera-plus-outline"
               size={28}
-              color={currentColor === '#ffffff' ? '#333333' : 'white'}
+              color={contentColor}
             />
           )}
         </TouchableOpacity>
         {selectedImage && (
-          <Button
-            mode="outlined"
+          <TouchableOpacity
+            style={styles.removeButton}
             onPress={() => {
               setSelectedImage('');
               onSave('icon', defaultIcons[markerId]);
             }}
-            style={styles.removeButton}
-            textColor="red"
           >
-            Remove Photo
-          </Button>
+            <MaterialCommunityIcons name="trash-can-outline" size={16} color={palette.danger} />
+            <Text style={styles.removeButtonText}>Remove photo</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
   );
 
+  const tabs = [
+    { key: 'icons' as const, icon: defaultIcons[markerId], label: 'Default' },
+    { key: 'text' as const, icon: 'format-text', label: 'Text' },
+    { key: 'photo' as const, icon: 'camera-outline', label: 'Photo' },
+  ];
+
   return (
     <Modal
       visible={visible}
       transparent={true}
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <TouchableOpacity 
@@ -224,81 +225,49 @@ export function IconCustomizationModal({
         activeOpacity={1}
         onPress={onClose}
       >
-        <View style={styles.modalContent}>
+        <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Title style={styles.modalTitle}>Customize Icon</Title>
-            <IconButton icon="close" onPress={onClose} />
-          </View>
-
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity
-              style={[styles.optionButton, activeTab === 'icons' && styles.activeOptionButton]}
-              onPress={() => {
-                setActiveTab('icons');
-                onSave('icon', defaultIcons[markerId]);
-              }}
-            >
-              <View style={styles.optionIconContainer}>
-                <MaterialCommunityIcons
-                  name={defaultIcons[markerId] as any}
-                  size={32}
-                  color={activeTab === 'icons' ? '#333333' : '#444'}
-                />
-              </View>
-              <PaperText style={[styles.optionLabel, activeTab === 'icons' && styles.activeOptionLabel]}>
-                Default Icon
-              </PaperText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.optionButton, activeTab === 'text' && styles.activeOptionButton]}
-              onPress={() => {
-                setActiveTab('text');
-                if (textInput.trim()) {
-                  onSave('text', textInput.trim());
-                }
-              }}
-            >
-              <View style={styles.optionIconContainer}>
-                <MaterialCommunityIcons
-                  name="format-text"
-                  size={32}
-                  color={activeTab === 'text' ? '#333333' : '#444'}
-                />
-              </View>
-              <PaperText style={[styles.optionLabel, activeTab === 'text' && styles.activeOptionLabel]}>
-                Text
-              </PaperText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.optionButton, activeTab === 'photo' && styles.activeOptionButton]}
-              onPress={() => {
-                setActiveTab('photo');
-                if (selectedImage) {
-                  onSave('photo', selectedImage);
-                }
-              }}
-            >
-              <View style={styles.optionIconContainer}>
-                <MaterialCommunityIcons
-                  name="camera"
-                  size={32}
-                  color={activeTab === 'photo' ? '#333333' : '#444'}
-                />
-              </View>
-              <PaperText style={[styles.optionLabel, activeTab === 'photo' && styles.activeOptionLabel]}>
-                Photo
-              </PaperText>
+            <Text style={styles.modalTitle}>Marker icon</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeButton}>
+              <MaterialCommunityIcons name="close" size={20} color={palette.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.contentArea}>
-            {activeTab === 'icons' && renderIconsTab()}
-            {activeTab === 'text' && renderTextTab()}
-            {activeTab === 'photo' && renderPhotoTab()}
+          <View style={styles.segmentContainer}>
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.segment, isActive && styles.activeSegment]}
+                  onPress={() => {
+                    setActiveTab(tab.key);
+                    if (tab.key === 'icons') {
+                      onSave('icon', defaultIcons[markerId]);
+                    } else if (tab.key === 'text' && textInput.trim()) {
+                      onSave('text', textInput.trim());
+                    } else if (tab.key === 'photo' && selectedImage) {
+                      onSave('photo', selectedImage);
+                    }
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={tab.icon as any}
+                    size={18}
+                    color={isActive ? palette.onAccent : palette.textSecondary}
+                  />
+                  <Text style={[styles.segmentLabel, isActive && styles.activeSegmentLabel]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </View>
+
+          {activeTab === 'icons' && renderIconsTab()}
+          {activeTab === 'text' && renderTextTab()}
+          {activeTab === 'photo' && renderPhotoTab()}
+        </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
   );
@@ -307,221 +276,121 @@ export function IconCustomizationModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: palette.overlay,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+    padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    width: '90%',
+    backgroundColor: palette.surfaceRaised,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    width: '100%',
     maxWidth: 400,
-    maxHeight: '80%',
-    flexDirection: 'column',
-    zIndex: 1001,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    ...shadows.floating,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: palette.textPrimary,
   },
-  optionsContainer: {
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    marginHorizontal: spacing.xl,
+    backgroundColor: palette.surfaceSunken,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    padding: 3,
+    gap: 3,
   },
-  optionButton: {
+  segment: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 2,
-    borderColor: '#d0d0d0',
-    minWidth: 80,
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: radii.pill,
   },
-  activeOptionButton: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+  activeSegment: {
+    backgroundColor: palette.accent,
   },
-  optionIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: '#cccccc',
-  },
-  optionLabel: {
+  segmentLabel: {
     fontSize: 12,
-    color: '#444',
-    textAlign: 'center',
     fontWeight: '600',
+    color: palette.textSecondary,
   },
-  activeOptionLabel: {
-    color: '#ffffff',
-    fontWeight: 'bold',
+  activeSegmentLabel: {
+    color: palette.onAccent,
   },
   contentArea: {
-    flex: 1,
-    padding: 16,
+    padding: spacing.xl,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    minHeight: 0,
   },
   contentDescription: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 13,
+    color: palette.textSecondary,
     textAlign: 'center',
-    marginBottom: 16,
-    fontWeight: '500',
-  },
-  defaultIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-    flex: 1,
-  },
-  defaultIconOption: {
-    width: 140,
-    height: 140,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-  },
-  defaultIconLabel: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  selectedIconLabel: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  selectedIconOption: {
-    borderColor: '#2196F3',
-    backgroundColor: '#2196F3',
-  },
-  inputContainer: {
-    marginBottom: 16,
-    width: '100%',
-  },
-  textInput: {
-    borderWidth: 2,
-    borderColor: '#2196F3',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#ffffff',
-    textAlign: 'center',
-    width: '100%',
-    height: 48,
-  },
-  buttonContainer: {
-    marginBottom: 16,
-    width: '100%',
-  },
-  textContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textPreview: {
-    alignItems: 'center',
-  },
-  previewLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  textPreviewBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#2196F3',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textPreviewText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  uploadButton: {
-    width: '100%',
-    paddingVertical: 8,
-  },
-  photoContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoPreview: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  photoPreviewImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginVertical: 8,
-  },
-  removeButton: {
-    marginTop: 16,
   },
   previewContainer: {
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   previewCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-  },
-  previewText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    borderWidth: 2.5,
+    ...shadows.card,
   },
   textInputInCircle: {
     fontWeight: 'bold',
+    fontSize: 20,
     padding: 0,
     margin: 0,
   },
   photoPreviewImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 35,
+    borderRadius: 38,
   },
-}); 
+  removeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.lg,
+    paddingVertical: 9,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: palette.dangerSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 113, 133, 0.35)',
+  },
+  removeButtonText: {
+    color: palette.danger,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+});

@@ -1,10 +1,11 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { MarkerCustomizationProvider } from '../context/MarkerCustomizationContext';
+import { palette, paperTheme } from '../constants/theme';
 
 // Keep splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -16,14 +17,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <PaperProvider>
+    <PaperProvider theme={paperTheme}>
       <MarkerCustomizationProvider>
         <View style={styles.container}>
-          <Stack 
+          <StatusBar style="light" />
+          <Stack
             screenOptions={{
               headerShown: false,
-              orientation: 'portrait'
-            }} 
+              orientation: 'portrait',
+              contentStyle: { backgroundColor: palette.bg },
+            }}
           />
         </View>
       </MarkerCustomizationProvider>
@@ -34,5 +37,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: palette.bg,
   },
 });

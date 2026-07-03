@@ -28,6 +28,12 @@
         <data android:scheme="badminton-court-simulator"/>
         <data android:scheme="com.haritabhgupta.badmintoncourtsimulator"/>
       </intent-filter>
+      <intent-filter android:autoVerify="true" data-generated="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <data android:scheme="https" android:host="badmlabs.github.io" android:pathPrefix="/court/import"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>
