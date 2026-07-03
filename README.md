@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Badminton Court Simulator" width="200" />
-</p>
-
 # Badminton Court Simulator
 
 A React Native app for simulating badminton court positions and movements with enhanced UI using React Native Paper and comprehensive player customization features.

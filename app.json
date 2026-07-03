@@ -2,7 +2,7 @@
   "expo": {
     "name": "Badminton Court Simulator",
     "slug": "badminton-court-simulator",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "scheme": "badminton-court-simulator",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -21,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.haritabhgupta.badmintoncourtsimulator",
-      "versionCode": 7,
+      "versionCode": 8,
       "permissions": [],
       "intentFilters": [
         {
