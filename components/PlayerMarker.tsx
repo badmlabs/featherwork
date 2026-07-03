@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, GestureResponderEvent, Modal, TouchableOpacity, Text, Dimensions, Image } from 'react-native';
-import { Button, Card, Chip, IconButton, Text as PaperText } from 'react-native-paper';
+import { Text as PaperText } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
+import { AppSlider } from './AppSlider';
+import {
+  markerColors,
+  markerContentColor,
+  markerRingColor,
+  palette,
+  radii,
+  shadows,
+  spacing,
+} from '../constants/theme';
 
 interface PlayerMarkerProps {
   position: { x: number; y: number };
@@ -21,9 +30,9 @@ interface PlayerMarkerProps {
 }
 
 const availableIcons = [
-  'account', 'account-circle', 'account-group', 'badminton', 'sports-tennis',
-  'person', 'person-outline', 'face', 'emoji-people', 'sports-soccer',
-  'sports-basketball', 'sports-volleyball', 'sports-cricket', 'star', 'favorite'
+  'account', 'account-circle', 'account-group', 'badminton', 'run',
+  'run-fast', 'walk', 'human-handsup', 'karate', 'soccer',
+  'basketball', 'volleyball', 'tennis', 'star', 'heart'
 ];
 
 export function PlayerMarker({ 
@@ -45,20 +54,8 @@ export function PlayerMarker({
   const [isLifted, setIsLifted] = useState(false);
   const [showCustomizationMenu, setShowCustomizationMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const longPressTimeout = React.useRef<NodeJS.Timeout>();
+  const longPressTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [markerSize, setMarkerSize] = useState(size || initialSize);
-
-  const colors = [
-    { name: 'Red', value: '#ff4444' },
-    { name: 'Green', value: '#44ff44' },
-    { name: 'Blue', value: '#4444ff' },
-    { name: 'Yellow', value: '#ffff44' },
-    { name: 'Purple', value: '#ff44ff' },
-    { name: 'Cyan', value: '#44ffff' },
-    { name: 'White', value: '#ffffff' },
-    { name: 'Orange', value: '#ff8800' },
-    { name: 'Pink', value: '#ff88ff' }
-  ];
 
   // Update internal markerSize when size prop changes
   useEffect(() => {
@@ -93,6 +90,8 @@ export function PlayerMarker({
     return { x, y };
   };
 
+  const contentColor = markerContentColor(color);
+
   return (
     <>
       <View
@@ -100,18 +99,18 @@ export function PlayerMarker({
           styles.marker,
           {
             backgroundColor: color,
-            borderColor: color === '#ffffff' ? '#000000' : 'white',
+            borderColor: markerRingColor(color),
             width: markerSize,
             height: markerSize,
             borderRadius: markerSize / 2,
             transform: [
               { translateX: position.x },
               { translateY: position.y },
-              { scale: isLifted ? 1.1 : 1 },
+              { scale: isLifted ? 1.12 : 1 },
             ],
-            shadowOpacity: isLifted ? 0.5 : 0.2,
-            shadowRadius: isLifted ? 4 : 2,
-            elevation: isLifted ? 8 : 2,
+            shadowOpacity: isLifted ? 0.6 : 0.35,
+            shadowRadius: isLifted ? 10 : 5,
+            elevation: isLifted ? 10 : 4,
             opacity: 1,
           },
         ]}
@@ -153,39 +152,39 @@ export function PlayerMarker({
           onPositionChangeComplete?.();
           setIsLifted(false);
         }}
-              >
-          {iconType === 'icon' && (
-            <MaterialCommunityIcons
-              name={icon as any}
-              size={markerSize * 0.6}
-              color={color === '#ffffff' ? '#000000' : 'white'}
-            />
-          )}
-          {iconType === 'text' && (
-            <Text style={[
-              styles.textIcon,
+      >
+        {iconType === 'icon' && (
+          <MaterialCommunityIcons
+            name={icon as any}
+            size={markerSize * 0.6}
+            color={contentColor}
+          />
+        )}
+        {iconType === 'text' && (
+          <Text style={[
+            styles.textIcon,
+            {
+              fontSize: markerSize * 0.4,
+              color: contentColor,
+            }
+          ]}>
+            {icon}
+          </Text>
+        )}
+        {iconType === 'photo' && (
+          <Image
+            source={{ uri: icon }}
+            style={[
+              styles.photoIcon,
               {
-                fontSize: markerSize * 0.4,
-                color: color === '#ffffff' ? '#000000' : 'white'
+                width: markerSize * 0.8,
+                height: markerSize * 0.8,
+                borderRadius: markerSize * 0.4,
               }
-            ]}>
-              {icon}
-            </Text>
-          )}
-          {iconType === 'photo' && (
-            <Image
-              source={{ uri: icon }}
-              style={[
-                styles.photoIcon,
-                {
-                  width: markerSize * 0.8,
-                  height: markerSize * 0.8,
-                  borderRadius: markerSize * 0.4,
-                }
-              ]}
-            />
-          )}
-        </View>
+            ]}
+          />
+        )}
+      </View>
 
       <Modal
         visible={showCustomizationMenu}
@@ -207,7 +206,7 @@ export function PlayerMarker({
             ]}
           >
             <PaperText variant="titleMedium" style={styles.menuTitle}>
-              Customize Player
+              Customize marker
             </PaperText>
             
             <View style={styles.section}>
@@ -215,15 +214,13 @@ export function PlayerMarker({
                 Color
               </PaperText>
               <View style={styles.colorGrid}>
-                {colors.map((colorOption) => (
+                {markerColors.map((colorOption) => (
                   <TouchableOpacity
                     key={colorOption.value}
                     style={[
                       styles.colorOption,
-                      { 
-                        backgroundColor: colorOption.value,
-                        borderColor: colorOption.value === '#ffffff' ? '#000000' : 'white'
-                      }
+                      { backgroundColor: colorOption.value },
+                      color === colorOption.value && styles.selectedColorOption,
                     ]}
                     onPress={() => {
                       onColorChange?.(colorOption.value);
@@ -233,7 +230,7 @@ export function PlayerMarker({
                       <MaterialCommunityIcons 
                         name="check" 
                         size={16} 
-                        color={colorOption.value === '#ffffff' ? '#000000' : 'white'} 
+                        color={markerContentColor(colorOption.value)} 
                       />
                     )}
                   </TouchableOpacity>
@@ -259,8 +256,8 @@ export function PlayerMarker({
                   >
                     <MaterialCommunityIcons 
                       name={iconOption as any} 
-                      size={24} 
-                      color={icon === iconOption ? '#2196F3' : '#666'} 
+                      size={22} 
+                      color={icon === iconOption ? palette.accent : palette.textSecondary} 
                     />
                   </TouchableOpacity>
                 ))}
@@ -271,7 +268,7 @@ export function PlayerMarker({
               <PaperText variant="bodyMedium" style={styles.sectionTitle}>
                 Size
               </PaperText>
-              <Slider
+              <AppSlider
                 style={styles.slider}
                 minimumValue={20}
                 maximumValue={60}
@@ -280,21 +277,18 @@ export function PlayerMarker({
                   setMarkerSize(value);
                   onSizeChange?.(value);
                 }}
-                minimumTrackTintColor="#2196F3"
-                maximumTrackTintColor="#000000"
               />
               <PaperText variant="bodySmall" style={styles.sizeValue}>
                 {Math.round(markerSize)}px
               </PaperText>
             </View>
 
-            <Button 
-              mode="contained" 
-              onPress={() => setShowCustomizationMenu(false)}
+            <TouchableOpacity
               style={styles.closeButton}
+              onPress={() => setShowCustomizationMenu(false)}
             >
-              Done
-            </Button>
+              <Text style={styles.closeButtonText}>Done</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -305,11 +299,11 @@ export function PlayerMarker({
 const styles = StyleSheet.create({
   marker: {
     position: 'absolute',
-    borderWidth: 2,
+    borderWidth: 2.5,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
     justifyContent: 'center',
     alignItems: 'center',
@@ -317,71 +311,73 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: palette.overlay,
   },
   customizationMenu: {
     position: 'absolute',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: palette.surfaceRaised,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
     width: 300,
-    maxHeight: 400,
+    maxHeight: 420,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: palette.hairline,
+    ...shadows.floating,
   },
   menuTitle: {
     textAlign: 'center',
-    marginBottom: 16,
-    fontWeight: 'bold',
+    marginBottom: spacing.lg,
+    fontWeight: '700',
+    color: palette.textPrimary,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     fontWeight: '600',
+    color: palette.textSecondary,
+    textTransform: 'uppercase',
+    fontSize: 11,
+    letterSpacing: 1,
   },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: 'center',
   },
   colorOption: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  selectedColorOption: {
+    borderColor: palette.textPrimary,
   },
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: 'center',
   },
   iconOption: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: palette.hairline,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: palette.surfaceSunken,
   },
   selectedIconOption: {
-    borderColor: '#2196F3',
-    backgroundColor: '#e3f2fd',
+    borderColor: palette.accent,
+    backgroundColor: palette.accentSoft,
   },
   slider: {
     width: '100%',
@@ -389,11 +385,21 @@ const styles = StyleSheet.create({
   },
   sizeValue: {
     textAlign: 'center',
-    marginTop: 4,
-    color: '#666',
+    marginTop: spacing.xs,
+    color: palette.textSecondary,
   },
   closeButton: {
-    marginTop: 8,
+    marginTop: spacing.xs,
+    backgroundColor: palette.accent,
+    borderRadius: radii.pill,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: palette.onAccent,
+    fontWeight: '700',
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   textIcon: {
     fontWeight: 'bold',
@@ -403,4 +409,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-}); 
+});

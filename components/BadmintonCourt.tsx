@@ -1,27 +1,39 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
-import { Appbar, Text as PaperText } from 'react-native-paper';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, Dimensions, Alert, Text, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import { PlayerMarker } from './PlayerMarker';
 import { IconButton } from './IconButton';
+import { CourtSvg } from './CourtSvg';
 import { useCourtPositions } from '../hooks/useCourtPositions';
+import { useStepSets } from '../hooks/useStepSets';
 import { PositionTrail } from './PositionTrail';
 import { SettingsPanel } from './SettingsPanel';
+import { StepSetsPanel } from './StepSetsPanel';
 import { useMarkerCustomization } from '../context/MarkerCustomizationContext';
+import { createStepSet, decodeSharedStepSet } from '../utils/stepSharing';
+import { StepSet } from '../types/drill';
+import { palette, radii, shadows, spacing } from '../constants/theme';
+
+const HEADER_CONTENT_HEIGHT = 56;
+const DOCK_HEIGHT = 78;
 
 export default function BadmintonCourt() {
+  const insets = useSafeAreaInsets();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
-  
-  const BUTTON_CONTAINER_HEIGHT = 75;
-  const BANNER_HEIGHT = 50;
-  const availableHeight = screenHeight - 2.2*BUTTON_CONTAINER_HEIGHT - BANNER_HEIGHT;
-  
-  // Without rotation, use normal width/height mapping
-  const courtWidth = screenWidth;      // Container width matches screen width
-  const courtHeight = availableHeight; // Container height matches available height
+
+  const headerTotal = insets.top + HEADER_CONTENT_HEIGHT;
+  const dockTotal = DOCK_HEIGHT + Math.max(insets.bottom, spacing.md) + spacing.md;
+
+  const courtWidth = screenWidth - spacing.md * 2;
+  const courtHeight = screenHeight - headerTotal - dockTotal - spacing.md * 2;
 
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isStepSetsVisible, setIsStepSetsVisible] = useState(false);
   const { customizations, updateMarkerCustomization } = useMarkerCustomization();
+  const { stepSets, saveStepSet, deleteStepSet, importStepSet } = useStepSets();
 
   const {
     isDoubles,
@@ -41,30 +53,77 @@ export default function BadmintonCourt() {
     showShuttleTrail,
     togglePlayerTrails,
     toggleShuttleTrail,
+    getStepsSnapshot,
+    loadNormalizedSteps,
+    stepCount,
   } = useCourtPositions({ width: courtWidth, height: courtHeight });
+
+  const handleImportStepSet = useCallback(async (stepSet: StepSet) => {
+    const savedStepSet = await importStepSet(stepSet);
+    loadNormalizedSteps(savedStepSet.steps, savedStepSet.isDoubles);
+  }, [importStepSet, loadNormalizedSteps]);
+
+  const handleIncomingUrl = useCallback(async (url: string | null) => {
+    if (!url) return;
+
+    const imported = decodeSharedStepSet(url);
+    if (!imported) return;
+
+    await handleImportStepSet(imported);
+    Alert.alert('Imported', `"${imported.name}" has been imported and loaded.`);
+  }, [handleImportStepSet]);
+
+  useEffect(() => {
+    Linking.getInitialURL().then(handleIncomingUrl);
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleIncomingUrl(url);
+    });
+
+    return () => subscription.remove();
+  }, [handleIncomingUrl]);
+
+  const handleSaveStepSet = useCallback(async (name: string) => {
+    const steps = getStepsSnapshot();
+    const stepSet = createStepSet(name, isDoubles, steps, {
+      width: courtWidth,
+      height: courtHeight,
+    });
+    await saveStepSet(stepSet);
+  }, [courtHeight, courtWidth, getStepsSnapshot, isDoubles, saveStepSet]);
+
+  const handleLoadStepSet = useCallback((stepSet: StepSet) => {
+    loadNormalizedSteps(stepSet.steps, stepSet.isDoubles);
+  }, [loadNormalizedSteps]);
 
   return (
     <View style={styles.container}>
-      <Appbar.Header style={styles.banner}>
-        <Appbar.Action icon="menu" onPress={() => setIsMenuVisible(true)} />
-        <Appbar.Content title="Badminton Court Simulator" />
-      </Appbar.Header>
-
-      <View style={[styles.courtWrapper, { marginBottom: BUTTON_CONTAINER_HEIGHT }]}>
-        <View 
-          style={[
-            styles.courtContainer, 
-            { 
-              width: courtWidth, 
-              height: courtHeight,
-            }
-          ]}
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top, height: headerTotal }]}>
+        <View style={styles.headerLeft}>
+          <View style={styles.logoBadge}>
+            <MaterialCommunityIcons name="badminton" size={20} color={palette.accent} />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>Court Simulator</Text>
+            <Text style={styles.headerSubtitle}>
+              {isDoubles ? 'Doubles' : 'Singles'} · Step {stepCount}
+            </Text>
+          </View>
+        </View>
+        <Pressable
+          onPress={() => setIsMenuVisible(true)}
+          hitSlop={8}
+          style={({ pressed }) => [styles.headerAction, pressed && styles.headerActionPressed]}
         >
-          <Image
-            source={require('../assets/badminton-court.png')}
-            style={styles.courtImage}
-            resizeMode="stretch"
-          />
+          <MaterialCommunityIcons name="tune-variant" size={22} color={palette.textPrimary} />
+        </Pressable>
+      </View>
+
+      {/* Court */}
+      <View style={[styles.courtWrapper, { marginBottom: dockTotal }]}>
+        <View style={[styles.courtContainer, { width: courtWidth, height: courtHeight }]}>
+          <CourtSvg width={courtWidth} height={courtHeight} />
 
           {showPlayerTrails && playerPositions.team1.map((pos, index) => (
             ghostPositions?.team1[index] && (
@@ -145,67 +204,66 @@ export default function BadmintonCourt() {
         </View>
       </View>
 
-      <View style={[styles.buttonContainer, { 
-        height: BUTTON_CONTAINER_HEIGHT,
-        bottom: 4
-      }]}>
-        {/* Left group: Game setup */}
-        <View style={styles.buttonGroupContainer}>
-          <PaperText variant="labelSmall" style={styles.buttonGroupLabel}>Game Setup</PaperText>
-          <View style={styles.buttonGroup}>
-            <IconButton
-              icon="refresh"
-              onPress={resetPositions}
-            />
-            <IconButton
-              icon={isDoubles ? "account-group" : "account"}
-              onPress={() => toggleGameMode(!isDoubles)}
-            />
-          </View>
-        </View>
+      {/* Floating toolbar dock */}
+      <View
+        style={[
+          styles.dock,
+          {
+            height: DOCK_HEIGHT,
+            bottom: Math.max(insets.bottom, spacing.md),
+          },
+        ]}
+      >
+        <IconButton icon="restart" label="Reset" onPress={resetPositions} />
+        <IconButton
+          icon={isDoubles ? 'account-group' : 'account'}
+          label={isDoubles ? 'Doubles' : 'Singles'}
+          onPress={() => toggleGameMode(!isDoubles)}
+        />
 
-        <View style={styles.divider} />
+        <View style={styles.dockDivider} />
 
-        {/* Center group: History Navigation */}
-        <View style={styles.buttonGroupContainer}>
-          <PaperText variant="labelSmall" style={styles.buttonGroupLabel}>History</PaperText>
-          <View style={styles.buttonGroup}>
-            <IconButton
-              icon="undo"
-              onPress={undo}
-              disabled={!canUndo}
-            />
-            <IconButton
-              icon="redo"
-              onPress={redo}
-              disabled={!canRedo}
-            />
-          </View>
-        </View>
+        <IconButton icon="undo-variant" label="Undo" onPress={undo} disabled={!canUndo} />
+        <IconButton icon="redo-variant" label="Redo" onPress={redo} disabled={!canRedo} />
 
-        <View style={styles.divider} />
+        <View style={styles.dockDivider} />
 
-        {/* Right group: Trail Markers */}
-        <View style={styles.buttonGroupContainer}>
-          <PaperText variant="labelSmall" style={styles.buttonGroupLabel}>Trails</PaperText>
-          <View style={styles.buttonGroup}>
-            <IconButton
-              icon="shoe-print"
-              onPress={togglePlayerTrails}
-              active={showPlayerTrails}
-            />
-            <IconButton
-              icon="badminton"
-              onPress={toggleShuttleTrail}
-              active={showShuttleTrail}
-            />
-          </View>
-        </View>
-              </View>
+        <IconButton
+          icon="shoe-print"
+          label="Trails"
+          onPress={togglePlayerTrails}
+          active={showPlayerTrails}
+        />
+        <IconButton
+          icon="badminton"
+          label="Shuttle"
+          onPress={toggleShuttleTrail}
+          active={showShuttleTrail}
+        />
+
+        <View style={styles.dockDivider} />
+
+        <IconButton
+          icon="playlist-play"
+          label="Drills"
+          onPress={() => setIsStepSetsVisible(true)}
+        />
+      </View>
 
       <SettingsPanel
         isVisible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}
+      />
+
+      <StepSetsPanel
+        isVisible={isStepSetsVisible}
+        onClose={() => setIsStepSetsVisible(false)}
+        stepSets={stepSets}
+        currentStepCount={stepCount}
+        onSave={handleSaveStepSet}
+        onLoad={handleLoadStepSet}
+        onDelete={deleteStepSet}
+        onImport={handleImportStepSet}
       />
     </View>
   );
@@ -214,68 +272,85 @@ export default function BadmintonCourt() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    backgroundColor: palette.bg,
+  },
+  header: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  logoBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.sm,
+    backgroundColor: palette.accentSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(45, 212, 191, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerTitle: {
+    color: palette.textPrimary,
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  headerSubtitle: {
+    color: palette.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  headerAction: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.sm,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerActionPressed: {
+    backgroundColor: palette.surfaceRaised,
   },
   courtWrapper: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    paddingVertical: spacing.md,
   },
   courtContainer: {
     position: 'relative',
+    borderRadius: 24,
+    ...shadows.floating,
   },
-  courtImage: {
-    width: '100%',
-    height: '100%',
-  },
-  buttonContainer: {
+  dock: {
     position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-evenly',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
-    marginHorizontal: 10,
-    width: '100%',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    paddingHorizontal: spacing.xs,
+    backgroundColor: palette.surface,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    ...shadows.floating,
   },
-  buttonGroup: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  divider: {
+  dockDivider: {
     width: 1,
-    height: '60%',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    height: 30,
+    backgroundColor: palette.hairline,
   },
-  banner: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-  },
-  buttonGroupLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  buttonGroupContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-}); 
+});

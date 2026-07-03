@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.haritabhgupta.badmintoncourtsimulator",
+      "sha256_cert_fingerprints": [
+        "74:44:7C:28:51:BA:D4:94:0A:F6:CC:1E:93:07:4B:87:31:E3:48:FB:BB:B5:2B:CD:9E:66:95:73:95:7E:DE:B6"
+      ]
+    }
+  }
+]

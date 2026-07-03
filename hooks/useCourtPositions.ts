@@ -1,7 +1,8 @@
 import { useCallback, useState, useEffect } from 'react';
 import { TeamPositions, CourtDimensions, PlayerPosition } from '../types/game';
+import { CourtStep, NormalizedStep } from '../types/drill';
 import { getInitialPositions, getInitialShuttle } from '../utils/courtPositions';
-import { createLastStationaryPositions, findChangedPositions } from '../utils/positionTracking';
+import { denormalizeSteps } from '../utils/stepSharing';
 
 interface GhostPosition {
   team1: PlayerPosition[];
@@ -13,6 +14,11 @@ interface PositionState {
   players: TeamPositions;
   shuttle: PlayerPosition;
   ghostPositions: GhostPosition;
+  lastStationaryPositions?: {
+    team1: PlayerPosition[];
+    team2: PlayerPosition[];
+    shuttle: PlayerPosition;
+  };
 }
 
 export function useCourtPositions(courtDimensions: CourtDimensions) {
@@ -179,6 +185,38 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     setShowShuttleTrail(prev => !prev);
   }, []);
 
+  const getStepsSnapshot = useCallback((): CourtStep[] => {
+    return positionHistory.slice(0, currentIndex + 1).map((state) => ({
+      players: state.players,
+      shuttle: state.shuttle,
+      ghostPositions: state.ghostPositions,
+    }));
+  }, [currentIndex, positionHistory]);
+
+  const loadSteps = useCallback((
+    steps: CourtStep[],
+    nextIsDoubles: boolean = isDoubles
+  ) => {
+    if (!steps.length) return;
+
+    if (nextIsDoubles !== isDoubles) {
+      setIsDoubles(nextIsDoubles);
+    }
+
+    setPositionHistory(steps);
+    setCurrentIndex(0);
+    setTempPosition(null);
+    setPositions(null);
+  }, [isDoubles]);
+
+  const loadNormalizedSteps = useCallback((
+    steps: NormalizedStep[],
+    nextIsDoubles: boolean = isDoubles
+  ) => {
+    const courtSteps = denormalizeSteps(steps, courtDimensions);
+    loadSteps(courtSteps, nextIsDoubles);
+  }, [courtDimensions, isDoubles, loadSteps]);
+
   return {
     isDoubles,
     playerPositions: tempPosition?.players || positionHistory[currentIndex]?.players || getInitialPositions(isDoubles, courtDimensions),
@@ -202,5 +240,10 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     showShuttleTrail,
     togglePlayerTrails,
     toggleShuttleTrail,
+    getStepsSnapshot,
+    loadSteps,
+    loadNormalizedSteps,
+    stepCount: currentIndex + 1,
+    totalSteps: positionHistory.length,
   };
 } 
