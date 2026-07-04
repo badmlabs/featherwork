@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, GestureResponderEvent, Modal, TouchableOpacity, Text, Dimensions, Image } from 'react-native';
+import { Animated, Easing, View, StyleSheet, GestureResponderEvent, Modal, TouchableOpacity, Text, Dimensions, Image } from 'react-native';
 import { Text as PaperText } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppSlider } from './AppSlider';
@@ -21,6 +21,8 @@ interface PlayerMarkerProps {
   isLeftHanded?: boolean;
   icon?: string;
   iconType?: 'icon' | 'text' | 'photo';
+  /** Amber ring: this piece is part of the armed Together step. */
+  linked?: boolean;
   onPositionChange?: (newPosition: { x: number; y: number }) => void;
   onPositionStart?: (newPosition: { x: number; y: number }) => void;
   onPositionChangeComplete?: () => void;
@@ -36,15 +38,16 @@ const availableIcons = [
   'basketball', 'volleyball', 'tennis', 'star', 'heart'
 ];
 
-export function PlayerMarker({ 
-  position, 
-  color, 
+export function PlayerMarker({
+  position,
+  color,
   size,
   isLeftHanded,
   icon = 'account',
   iconType = 'icon',
-  onPositionChange, 
-  onPositionStart, 
+  linked = false,
+  onPositionChange,
+  onPositionStart,
   onPositionChangeComplete,
   onColorChange,
   onSizeChange,
@@ -57,6 +60,25 @@ export function PlayerMarker({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const longPressTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [markerSize, setMarkerSize] = useState(size || initialSize);
+  const translate = React.useRef(new Animated.ValueXY({ x: position.x, y: position.y })).current;
+
+  // While the finger is down the marker must track it 1:1; any other position
+  // change (undo/redo/reset/drill load/Together cancel) glides so the eye can
+  // follow where each piece went.
+  const { x: targetX, y: targetY } = position;
+  useEffect(() => {
+    if (isLifted) {
+      translate.stopAnimation();
+      translate.setValue({ x: targetX, y: targetY });
+    } else {
+      Animated.timing(translate, {
+        toValue: { x: targetX, y: targetY },
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isLifted, targetX, targetY, translate]);
 
   // Update internal markerSize when size prop changes
   useEffect(() => {
@@ -95,18 +117,18 @@ export function PlayerMarker({
 
   return (
     <>
-      <View
+      <Animated.View
         style={[
           styles.marker,
           {
             backgroundColor: color,
-            borderColor: markerRingColor(color),
+            borderColor: linked ? palette.accent : markerRingColor(color),
+            borderWidth: linked ? 3 : 2.5,
             width: markerSize,
             height: markerSize,
             borderRadius: markerSize / 2,
             transform: [
-              { translateX: position.x },
-              { translateY: position.y },
+              ...translate.getTranslateTransform(),
               { scale: isLifted ? 1.12 : 1 },
             ],
             shadowOpacity: isLifted ? 0.6 : 0.35,
@@ -185,7 +207,7 @@ export function PlayerMarker({
             ]}
           />
         )}
-      </View>
+      </Animated.View>
 
       <Modal
         visible={showCustomizationMenu}
