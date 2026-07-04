@@ -257,7 +257,12 @@ export function DrillHubPanel({
                     : 'Tactical patterns ready to load onto the court'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={onClose}
+                hitSlop={8}
+                accessibilityLabel="Close drills"
+                style={styles.closeButton}
+              >
                 <MaterialCommunityIcons name="close" size={18} color={palette.textPrimary} />
               </TouchableOpacity>
             </View>
@@ -531,6 +536,7 @@ export function DrillHubPanel({
                 <TouchableOpacity
                   onPress={() => setPaywallVisible(false)}
                   hitSlop={8}
+                  accessibilityLabel="Close paywall"
                   style={styles.closeButton}
                 >
                   <MaterialCommunityIcons name="close" size={18} color={palette.textPrimary} />

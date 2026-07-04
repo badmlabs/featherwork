@@ -298,7 +298,12 @@ export function SettingsPanel({
               <Text style={styles.headerTitle}>Customize</Text>
               <Text style={styles.headerSubtitle}>Game mode, step speed, marker colors and icons</Text>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityLabel="Close settings"
+              style={styles.closeButton}
+            >
               <MaterialCommunityIcons name="close" size={18} color={palette.textPrimary} />
             </TouchableOpacity>
           </View>

@@ -496,6 +496,7 @@ export default function BadmintonCourt() {
           <Pressable
             onPress={() => setDrillHubTab('vault')}
             hitSlop={8}
+            accessibilityLabel="Drill Vault"
             style={({ pressed }) => [styles.headerAction, pressed && styles.glassPressed]}
           >
             <MaterialCommunityIcons name="treasure-chest" size={20} color={palette.accent} />
@@ -508,6 +509,7 @@ export default function BadmintonCourt() {
           <Pressable
             onPress={() => setIsMenuVisible(true)}
             hitSlop={8}
+            accessibilityLabel="Customize"
             style={({ pressed }) => [styles.headerAction, pressed && styles.glassPressed]}
           >
             <MaterialCommunityIcons name="tune-variant" size={20} color={palette.textPrimary} />
