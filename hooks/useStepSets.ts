@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StepSet } from '../types/drill';
+import { appAlert } from '../utils/appAlert';
 
 const STORAGE_KEY = 'badminton-step-sets';
+const STEP_SET_LIMIT = 5;
 
 export function useStepSets() {
   const [stepSets, setStepSets] = useState<StepSet[]>([]);
@@ -41,17 +43,27 @@ export function useStepSets() {
     });
   };
 
-  // Functional updates keep these callbacks stable across renders, so
-  // consumers can safely list them in effect dependencies.
+  // saveStepSet gates on the current list for the cap, so unlike the others
+  // it changes identity when the list does; callers already tolerate that.
+  // Returns null (after alerting) when the limit is hit.
   const saveStepSet = useCallback(async (stepSet: StepSet) => {
+    const isUpdate = stepSets.some((existing) => existing.id === stepSet.id);
+    if (!isUpdate && stepSets.length >= STEP_SET_LIMIT) {
+      appAlert(
+        'Drill limit reached',
+        `Up to ${STEP_SET_LIMIT} drills can be saved. Delete one to make room.`
+      );
+      return null;
+    }
     setStepSets((prev) => {
       const next = [stepSet, ...prev.filter((existing) => existing.id !== stepSet.id)];
       writeToStorage(next);
       return next;
     });
     return stepSet;
-  }, []);
+  }, [stepSets]);
 
+  // Functional updates keep the remaining callbacks stable across renders.
   const deleteStepSet = useCallback(async (id: string) => {
     setStepSets((prev) => {
       const next = prev.filter((stepSet) => stepSet.id !== id);

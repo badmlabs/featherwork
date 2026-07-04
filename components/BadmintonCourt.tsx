@@ -26,6 +26,14 @@ const LINES_GAP = 16;
 // re-import a URL that was already handled in this app session.
 const consumedShareUrls = new Set<string>();
 
+// A share link remounts this component (via +not-found) right after the URL
+// event fires, so the import dialog — which survives in the root-level
+// AppAlertHost — must apply through whichever instance is mounted when the
+// user answers, not through the closure that showed it.
+const liveApplyImport: {
+  current: ((stepSet: StepSet, replaceId?: string) => void) | null;
+} = { current: null };
+
 export default function BadmintonCourt() {
   const insets = useSafeAreaInsets();
 
@@ -125,31 +133,33 @@ export default function BadmintonCourt() {
     const saved = replaceId
       ? await replaceStepSet(replaceId, stepSet)
       : await importStepSet(stepSet);
+    if (!saved) return; // drill limit reached; the hook already alerted
     loadNormalizedSteps(saved.steps, saved.isDoubles);
     appAlert('Imported', `"${saved.name}" has been imported and loaded.`);
   }, [importStepSet, loadNormalizedSteps, replaceStepSet]);
 
+  useEffect(() => {
+    liveApplyImport.current = applyImport;
+  }, [applyImport]);
+
   const handleImportStepSet = useCallback(async (stepSet: StepSet) => {
     const existing = stepSets.find((item) => item.name === stepSet.name);
 
-    if (existing) {
-      appAlert(
-        'Drill already exists',
-        `A drill named "${stepSet.name}" is already saved. Replace it?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Replace',
-            style: 'destructive',
-            onPress: () => applyImport(stepSet, existing.id),
-          },
-        ]
-      );
-      return;
-    }
-
-    await applyImport(stepSet);
-  }, [applyImport, stepSets]);
+    appAlert(
+      existing ? 'Drill already exists' : 'Import drill',
+      existing
+        ? `A drill named "${stepSet.name}" is already saved. Replace it?`
+        : `Import "${stepSet.name}" and load it onto the court?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: existing ? 'Replace' : 'Import',
+          style: existing ? 'destructive' : 'default',
+          onPress: () => liveApplyImport.current?.(stepSet, existing?.id),
+        },
+      ]
+    );
+  }, [stepSets]);
 
   const handleImportStepSetRef = useRef(handleImportStepSet);
   useEffect(() => {
@@ -184,7 +194,7 @@ export default function BadmintonCourt() {
       width: screenWidth,
       height: screenHeight,
     });
-    await saveStepSet(stepSet);
+    return (await saveStepSet(stepSet)) !== null;
   }, [getStepsSnapshot, isDoubles, saveStepSet, screenHeight, screenWidth]);
 
   const handleLoadStepSet = useCallback((stepSet: StepSet) => {
@@ -276,19 +286,14 @@ export default function BadmintonCourt() {
         onIconChange={(icon) => updateMarkerCustomization('Shuttle', { icon })}
       />
 
-      {/* Floating header: mode pill + customize button */}
+      {/* Floating header: mode status pill + customize button */}
       <View style={[styles.header, { marginTop: headerTop }]} pointerEvents="box-none">
-        <Pressable
-          onPress={() => toggleGameMode(!isDoubles)}
-          hitSlop={8}
-          style={({ pressed }) => [styles.modePill, pressed && styles.glassPressed]}
-        >
+        <View style={styles.modePill}>
           <MaterialCommunityIcons name="badminton" size={18} color={palette.textPrimary} />
           <Text style={styles.modePillLabel}>
             {isDoubles ? 'Doubles' : 'Singles'} · Step {stepCount}
           </Text>
-          <MaterialCommunityIcons name="chevron-down" size={16} color={palette.textSecondary} />
-        </Pressable>
+        </View>
         <Pressable
           onPress={() => setIsMenuVisible(true)}
           hitSlop={8}
@@ -328,6 +333,8 @@ export default function BadmintonCourt() {
       <SettingsPanel
         isVisible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}
+        isDoubles={isDoubles}
+        onGameModeChange={toggleGameMode}
       />
 
       <StepSetsPanel

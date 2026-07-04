@@ -13,7 +13,7 @@ interface StepSetsPanelProps {
   onClose: () => void;
   stepSets: StepSet[];
   currentStepCount: number;
-  onSave: (name: string) => Promise<void>;
+  onSave: (name: string) => Promise<boolean>;
   onLoad: (stepSet: StepSet) => void;
   onDelete: (id: string) => Promise<void>;
   onImport: (stepSet: StepSet) => Promise<void>;
@@ -67,10 +67,12 @@ export function StepSetsPanel({
 
     setIsSaving(true);
     try {
-      await onSave(trimmedName);
-      setStepSetName('');
+      const saved = await onSave(trimmedName);
       setSaveDialogVisible(false);
-      appAlert('Saved', `"${trimmedName}" has been saved.`);
+      if (saved) {
+        setStepSetName('');
+        appAlert('Saved', `"${trimmedName}" has been saved.`);
+      }
     } catch (error) {
       appAlert('Save failed', 'Could not save this step set.');
       console.error(error);
