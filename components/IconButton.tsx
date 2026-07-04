@@ -46,7 +46,7 @@ export function IconButton({
 
 const styles = StyleSheet.create({
   button: {
-    minWidth: 46,
+    minWidth: 44,
     paddingVertical: 5,
     paddingHorizontal: 4,
     borderRadius: 16,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   activeButton: {
-    minWidth: 50,
+    minWidth: 44,
     backgroundColor: palette.accent,
   },
   pressedButton: {
