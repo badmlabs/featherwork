@@ -477,5 +477,5 @@ export function decodeSharedStepSet(sharedText: string): StepSet | null {
 
 export function getShareMessage(stepSet: StepSet): string {
   const link = encodeStepSetForSharing(stepSet);
-  return `Badminton drill: ${stepSet.name}\n\n${link}\n\nTap the link to open in Badminton Court Simulator, or copy and use Import from clipboard.`;
+  return `Badminton drill: ${stepSet.name}\n\n${link}\n\nTap the link to open in Featherwork, or copy and use Import from clipboard.`;
 }
