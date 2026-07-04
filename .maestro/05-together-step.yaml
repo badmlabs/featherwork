@@ -1,0 +1,29 @@
+# CUF: arm Together, drag two pieces, save them as one history step.
+# While armed the step counter must not advance; the closing Undo proves
+# both moves rewind as a single step.
+appId: com.haritabhgupta.badmintoncourtsimulator
+---
+- launchApp:
+    clearState: true
+# settle: the court re-seeds once the real layout is measured (see 03)
+- assertVisible: "Doubles.*Step 1"
+- tapOn: "Together"
+- assertVisible: "Together is on.*"
+# armed: the first dock slot flips to Cancel
+- assertVisible: "Cancel"
+- swipe:
+    start: 30%, 35%
+    end: 45%, 22%
+    duration: 800
+# deferred: a piece moved but no step was committed
+- assertVisible: "Doubles.*Step 1"
+- swipe:
+    start: 30%, 75%
+    end: 45%, 62%
+    duration: 800
+- assertVisible: "Doubles.*Step 1"
+# second tap saves the accumulated moves as one step
+- tapOn: "Together"
+- assertVisible: "Doubles.*Step 2"
+- tapOn: "Undo"
+- assertVisible: "Doubles.*Step 1"

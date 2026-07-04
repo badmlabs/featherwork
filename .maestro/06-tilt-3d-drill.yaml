@@ -1,0 +1,37 @@
+# CUF: load a vault drill, tilt into the 3D world view, start playback and
+# pan-rotate the camera while the rally is flying.
+appId: com.haritabhgupta.badmintoncourtsimulator
+---
+- launchApp:
+    clearState: true
+- tapOn: "Drills"
+- tapOn: "Drill Vault"
+- assertVisible: "Four-Corner Shadow"
+- tapOn: "Four-Corner Shadow"
+- assertVisible: "Drill loaded.*"
+- assertVisible: "1/9"
+- tapOn: "3D"
+# the hint chip only renders once the court has tilted in
+- assertVisible: "drag to rotate and tilt"
+- tapOn: "Play"
+# 3D playback advances through the steps on its own
+- extendedWaitUntil:
+    visible: "3/9"
+    timeout: 15000
+# pan-rotate mid-rally: yaw right, then tilt down and yaw back
+- swipe:
+    start: 25%, 45%
+    end: 75%, 48%
+    duration: 900
+- swipe:
+    start: 70%, 40%
+    end: 35%, 65%
+    duration: 900
+# still playing after the orbit; the counter keeps climbing (wraps at 9)
+- assertVisible: "Pause"
+- extendedWaitUntil:
+    visible: "6/9"
+    timeout: 20000
+# round-trip back to the flat court: playback lock is still on
+- tapOn: "2D"
+- assertVisible: "Drill loaded.*"
