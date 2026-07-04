@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { palette, sora } from '../constants/theme';
 
@@ -10,6 +10,10 @@ interface IconButtonProps {
   active?: boolean;
   size?: number;
   label?: string;
+  /** Tint for the icon when not active (e.g. palette.danger for Cancel). */
+  color?: string;
+  /** Small count bubble at the top-right corner; hidden when 0/undefined. */
+  badge?: number;
 }
 
 export function IconButton({
@@ -19,8 +23,10 @@ export function IconButton({
   active = false,
   size = 20,
   label,
+  color,
+  badge,
 }: IconButtonProps) {
-  const iconColor = active ? palette.onAccent : 'rgba(255, 255, 255, 0.85)';
+  const iconColor = active ? palette.onAccent : color ?? 'rgba(255, 255, 255, 0.85)';
 
   return (
     <Pressable
@@ -39,6 +45,11 @@ export function IconButton({
         <Text style={[styles.label, active && styles.activeLabel]} numberOfLines={1}>
           {label}
         </Text>
+      ) : null}
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
       ) : null}
     </Pressable>
   );
@@ -74,5 +85,24 @@ const styles = StyleSheet.create({
   activeLabel: {
     ...sora('700'),
     color: palette.onAccent,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: 1,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: palette.onAccent,
+    borderWidth: 1.5,
+    borderColor: palette.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    ...sora('700'),
+    fontSize: 10,
+    color: palette.accent,
   },
 });

@@ -27,7 +27,7 @@ adb exec-out screencap -p > screen.png                # inspect UI state
 adb shell input tap X Y / input swipe X1 Y1 X2 Y2 600 # drive it (coords in px)
 ```
 
-Critical user flows to exercise: drag a marker (step count increments), undo/redo/reset, singles/doubles switch (Customize panel), save/load/delete a drill, share link, deep-link import:
+Critical user flows to exercise: drag a marker (step count increments; a tap without a drag must NOT increment), undo/redo/reset (markers glide, ~260ms), Together (arm via dock, drag several pieces — amber rings + count badge, no step yet — tap Together again to commit ONE step; Cancel discards), singles/doubles switch (Customize panel), save/load/delete a drill, share link, deep-link import:
 
 ```bash
 adb shell am start -a android.intent.action.VIEW \

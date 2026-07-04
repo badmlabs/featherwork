@@ -21,6 +21,17 @@ interface PositionState {
   };
 }
 
+const hasMoved = (a: PlayerPosition, b: PlayerPosition) => a.x !== b.x || a.y !== b.y;
+
+function statesDiffer(a: PositionState, b: PositionState): boolean {
+  return (
+    hasMoved(a.shuttle, b.shuttle) ||
+    (['team1', 'team2'] as const).some((team) =>
+      a.players[team].some((pos, i) => hasMoved(pos, b.players[team][i]))
+    )
+  );
+}
+
 export function useCourtPositions(courtDimensions: CourtDimensions) {
   const [isDoubles, setIsDoubles] = useState(true);
   const [showPlayerTrails, setShowPlayerTrails] = useState(true);
@@ -28,7 +39,9 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [positionHistory, setPositionHistory] = useState<PositionState[]>([]);
   const [tempPosition, setTempPosition] = useState<PositionState | null>(null);
-  const [positions, setPositions] = useState<PositionState | null>(null);
+  // Together: while armed, drag commits are deferred — every move accumulates
+  // in tempPosition and saving pushes them as one history step.
+  const [isTogether, setIsTogether] = useState(false);
   // Initialize state with ghost markers at the same positions as players and shuttle
   useEffect(() => {
     const initialPlayers = getInitialPositions(isDoubles, courtDimensions);
@@ -47,35 +60,29 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
 
   const updatePosition = useCallback((
     newState: Pick<PositionState, 'players' | 'shuttle'>,
-    currentState: PositionState,
+    base: PositionState,
+    committed: PositionState,
     team?: 'team1' | 'team2',
     index?: number,
     isShuttle: boolean = false,
     isStart: boolean = false
   ) => {
     if (isStart) {
-      // Create ghost positions based on current positions, but only update
-      // the specific marker that's starting to move
+      // Refresh only the dragged piece's ghost, seeding it from the committed
+      // state so re-dragging a piece mid-Together keeps its step-start ghost.
       const ghostPositions = {
-        team1: [...currentState.ghostPositions.team1],
-        team2: [...currentState.ghostPositions.team2],
-        shuttle: currentState.ghostPositions.shuttle,
+        team1: [...base.ghostPositions.team1],
+        team2: [...base.ghostPositions.team2],
+        shuttle: base.ghostPositions.shuttle,
       };
 
       if (team && typeof index === 'number') {
-        // Only update the ghost position for the specific player being moved
-        ghostPositions[team][index] = currentState.players[team][index];
+        ghostPositions[team][index] = committed.players[team][index];
       } else if (isShuttle) {
-        // Only update shuttle ghost position if shuttle is being moved
-        ghostPositions.shuttle = currentState.shuttle;
+        ghostPositions.shuttle = committed.shuttle;
       }
 
       setTempPosition({
-        ...newState,
-        ghostPositions,
-      });
-
-      setPositions({
         ...newState,
         ghostPositions,
       });
@@ -83,7 +90,7 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
       // During drag, maintain existing ghost positions
       setTempPosition(prevTemp => ({
         ...newState,
-        ghostPositions: prevTemp?.ghostPositions || currentState.ghostPositions,
+        ghostPositions: prevTemp?.ghostPositions || base.ghostPositions,
       }));
     }
   }, []);
@@ -94,46 +101,66 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     newPosition: PlayerPosition,
     isStart: boolean = false
   ) => {
-    const currentState = positionHistory[currentIndex];
+    const committed = positionHistory[currentIndex];
+    // Base on the in-progress temp state so moving a second piece (Together)
+    // doesn't clobber the first piece's uncommitted move.
+    const base = tempPosition ?? committed;
     const newPlayers = {
-      ...currentState.players,
-      [team]: currentState.players[team].map((pos, i) => 
+      ...base.players,
+      [team]: base.players[team].map((pos, i) =>
         i === index ? newPosition : pos
       ),
     };
-    
-    updatePosition({ 
-      players: newPlayers, 
-      shuttle: currentState.shuttle 
-    }, currentState, team, index, false, isStart);
-  }, [currentIndex, positionHistory, updatePosition]);
+
+    updatePosition({
+      players: newPlayers,
+      shuttle: base.shuttle
+    }, base, committed, team, index, false, isStart);
+  }, [currentIndex, positionHistory, tempPosition, updatePosition]);
 
   const updateShuttlePosition = useCallback((
     newPosition: PlayerPosition,
     isStart: boolean = false
   ) => {
-    const currentState = positionHistory[currentIndex];
-    updatePosition({ 
-      players: currentState.players, 
-      shuttle: newPosition 
-    }, currentState, undefined, undefined, true, isStart);
-  }, [currentIndex, positionHistory, updatePosition]);
+    const committed = positionHistory[currentIndex];
+    const base = tempPosition ?? committed;
+    updatePosition({
+      players: base.players,
+      shuttle: newPosition
+    }, base, committed, undefined, undefined, true, isStart);
+  }, [currentIndex, positionHistory, tempPosition, updatePosition]);
+
+  const commitTemp = useCallback(() => {
+    if (!tempPosition) return;
+    // Skip no-op commits: a tap without a drag must not add a history step.
+    if (statesDiffer(tempPosition, positionHistory[currentIndex])) {
+      setPositionHistory(prev => [...prev.slice(0, currentIndex + 1), tempPosition]);
+      setCurrentIndex(prev => prev + 1);
+    }
+    setTempPosition(null);
+  }, [currentIndex, positionHistory, tempPosition]);
 
   const handlePositionChangeComplete = useCallback(() => {
-    if (!tempPosition) return;
+    if (isTogether) return; // armed: keep accumulating until saved
+    commitTemp();
+  }, [commitTemp, isTogether]);
 
-    // When drag completes, update the position history with the new positions
-    // and their corresponding ghost positions
-    setPositionHistory(prev => {
-      const newHistory = prev.slice(0, currentIndex + 1);
-      return [...newHistory, {
-        ...tempPosition,
-        ghostPositions: tempPosition.ghostPositions,
-      }];
-    });
-    setCurrentIndex(prev => prev + 1);
+  // Arm Together, or — when already armed — save the accumulated moves as
+  // one history step.
+  const toggleTogether = useCallback(() => {
+    if (!isTogether) {
+      setIsTogether(true);
+      return;
+    }
+    setIsTogether(false);
+    commitTemp();
+  }, [commitTemp, isTogether]);
+
+  // Discard the armed step; markers glide back to their committed spots.
+  const cancelTogether = useCallback(() => {
+    setIsTogether(false);
     setTempPosition(null);
-  }, [currentIndex, tempPosition]);
+  }, []);
 
   // Reset ghost markers when resetting positions
   const resetPositions = useCallback(() => {
@@ -150,6 +177,8 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     };
     setPositionHistory([initialState]);
     setCurrentIndex(0);
+    setTempPosition(null);
+    setIsTogether(false);
   }, [isDoubles, courtDimensions]);
 
   const toggleGameMode = useCallback((value: boolean) => {
@@ -167,6 +196,8 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     };
     setPositionHistory([initialState]);
     setCurrentIndex(0);
+    setTempPosition(null);
+    setIsTogether(false);
   }, [courtDimensions]);
 
   const undo = useCallback(() => {
@@ -206,7 +237,7 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     setPositionHistory(steps);
     setCurrentIndex(0);
     setTempPosition(null);
-    setPositions(null);
+    setIsTogether(false);
   }, [isDoubles]);
 
   const loadNormalizedSteps = useCallback((
@@ -217,6 +248,17 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     loadSteps(courtSteps, nextIsDoubles);
   }, [courtDimensions, isDoubles, loadSteps]);
 
+  // Which pieces have uncommitted moves in the armed Together step (drives
+  // the amber rings and the dock badge count).
+  const committedState = positionHistory[currentIndex];
+  const togetherMoved = isTogether && tempPosition && committedState
+    ? {
+        team1: tempPosition.players.team1.map((pos, i) => hasMoved(pos, committedState.players.team1[i])),
+        team2: tempPosition.players.team2.map((pos, i) => hasMoved(pos, committedState.players.team2[i])),
+        shuttle: hasMoved(tempPosition.shuttle, committedState.shuttle),
+      }
+    : null;
+
   return {
     isDoubles,
     playerPositions: tempPosition?.players || positionHistory[currentIndex]?.players || getInitialPositions(isDoubles, courtDimensions),
@@ -224,6 +266,10 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     updatePlayerPosition,
     updateShuttlePosition,
     handlePositionChangeComplete,
+    isTogether,
+    toggleTogether,
+    cancelTogether,
+    togetherMoved,
     toggleGameMode,
     resetPositions,
     undo,

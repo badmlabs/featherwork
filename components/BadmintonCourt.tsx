@@ -117,6 +117,10 @@ export default function BadmintonCourt() {
     updatePlayerPosition,
     updateShuttlePosition,
     handlePositionChangeComplete,
+    isTogether,
+    toggleTogether,
+    cancelTogether,
+    togetherMoved,
     toggleGameMode,
     resetPositions,
     undo,
@@ -131,6 +135,10 @@ export default function BadmintonCourt() {
     loadNormalizedSteps,
     stepCount,
   } = useCourtPositions(courtDimensions);
+
+  const togetherCount = togetherMoved
+    ? [...togetherMoved.team1, ...togetherMoved.team2, togetherMoved.shuttle].filter(Boolean).length
+    : 0;
 
   // Once the real court area is measured, re-seed the default positions —
   // but only while the board is pristine (nothing moved, no history).
@@ -280,6 +288,7 @@ export default function BadmintonCourt() {
           isLeftHanded={customizations[index === 0 ? 'P1' : 'P2'].isLeftHanded}
           icon={customizations[index === 0 ? 'P1' : 'P2'].icon}
           iconType={customizations[index === 0 ? 'P1' : 'P2'].iconType}
+          linked={!!togetherMoved?.team1[index]}
           onPositionChange={(newPos) => updatePlayerPosition('team1', index, newPos)}
           onPositionStart={(newPos) => updatePlayerPosition('team1', index, newPos, true)}
           onPositionChangeComplete={handlePositionChangeComplete}
@@ -297,6 +306,7 @@ export default function BadmintonCourt() {
           isLeftHanded={customizations[index === 0 ? 'P3' : 'P4'].isLeftHanded}
           icon={customizations[index === 0 ? 'P3' : 'P4'].icon}
           iconType={customizations[index === 0 ? 'P3' : 'P4'].iconType}
+          linked={!!togetherMoved?.team2[index]}
           onPositionChange={(newPos) => updatePlayerPosition('team2', index, newPos)}
           onPositionStart={(newPos) => updatePlayerPosition('team2', index, newPos, true)}
           onPositionChangeComplete={handlePositionChangeComplete}
@@ -312,6 +322,7 @@ export default function BadmintonCourt() {
         size={customizations.Shuttle.size}
         icon={customizations.Shuttle.icon}
         iconType={customizations.Shuttle.iconType}
+        linked={!!togetherMoved?.shuttle}
         onPositionChange={updateShuttlePosition}
         onPositionStart={(newPos) => updateShuttlePosition(newPos, true)}
         onPositionChangeComplete={handlePositionChangeComplete}
@@ -351,14 +362,46 @@ export default function BadmintonCourt() {
         </View>
       </View>
 
+      {/* Armed-Together banner (visual only; never blocks drags underneath) */}
+      {isTogether && (
+        <View
+          style={[styles.togetherBanner, { top: headerTop + HEADER_HEIGHT + spacing.md }]}
+          pointerEvents="none"
+        >
+          <MaterialCommunityIcons name="link-variant" size={17} color={palette.accent} />
+          <View style={styles.togetherBannerText}>
+            <Text style={styles.togetherBannerTitle}>Together is on — drag any pieces</Text>
+            <Text style={styles.togetherBannerBody}>
+              They&apos;ll move as one step · Together saves · Cancel discards
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Court area spacer between header and dock — its measured rect hosts the lines */}
       <View style={styles.courtArea} pointerEvents="none" onLayout={onCourtAreaLayout} />
 
       {/* Floating bottom dock */}
       <View style={[styles.dock, { marginBottom: dockBottom }]}>
-        <IconButton icon="restart" label="Reset" onPress={resetPositions} />
-        <IconButton icon="undo-variant" label="Undo" onPress={undo} disabled={!canUndo} />
-        <IconButton icon="redo-variant" label="Redo" onPress={redo} disabled={!canRedo} />
+        {isTogether ? (
+          <IconButton
+            icon="close-circle-outline"
+            label="Cancel"
+            color={palette.danger}
+            onPress={cancelTogether}
+          />
+        ) : (
+          <IconButton icon="restart" label="Reset" onPress={resetPositions} />
+        )}
+        <IconButton icon="undo-variant" label="Undo" onPress={undo} disabled={!canUndo || isTogether} />
+        <IconButton icon="redo-variant" label="Redo" onPress={redo} disabled={!canRedo || isTogether} />
+        <IconButton
+          icon="link-variant"
+          label="Together"
+          onPress={toggleTogether}
+          active={isTogether}
+          badge={togetherCount}
+        />
         <IconButton
           icon="shoe-print"
           label="Trails"
@@ -469,6 +512,36 @@ const styles = StyleSheet.create({
     fontSize: 8,
     letterSpacing: 0.6,
     color: palette.onAccent,
+  },
+  // Amber glass per the Together mockup (opacity bumped: no backdrop blur on RN).
+  togetherBanner: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(35, 22, 4, 0.78)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 201, 77, 0.75)',
+    ...shadows.card,
+  },
+  togetherBannerText: {
+    flex: 1,
+    gap: 2,
+  },
+  togetherBannerTitle: {
+    ...sora('600'),
+    fontSize: 12,
+    color: '#FFE4A6',
+  },
+  togetherBannerBody: {
+    ...sora('400'),
+    fontSize: 10.5,
+    color: 'rgba(255, 228, 166, 0.75)',
   },
   dock: {
     marginHorizontal: 14,
