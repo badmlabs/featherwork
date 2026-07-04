@@ -72,6 +72,7 @@ android/local.properties
 
 # Android security files
 *.keystore*
+!android/app/debug.keystore
 *.jks
 keystore.properties
 release-keystore.properties
@@ -81,10 +82,6 @@ release-keystore.properties
 .settings
 .classpath
 *.hprof
-
-# Generated assets
-android/app/src/main/res/drawable*/splashscreen_logo*
-android/app/src/main/res/mipmap*/ic_launcher*
 
 # Misc
 .secrets
