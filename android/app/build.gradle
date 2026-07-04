@@ -171,6 +171,11 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
+    // Play requires Billing Library >= 6.0.1 whenever the BILLING permission is
+    // declared; without it the artifact is rejected as a deprecated AIDL
+    // integration. Superseded by the RevenueCat SDK's own billing client later.
+    implementation("com.android.billingclient:billing:7.1.1")
+
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
     def isWebpAnimatedEnabled = (findProperty('expo.webp.animated') ?: "") == "true";
