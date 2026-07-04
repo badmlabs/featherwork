@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, Dimensions, Text, Pressable, LayoutChangeEvent } from 'react-native';
 import { appAlert } from '../utils/appAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,8 @@ import * as Linking from 'expo-linking';
 import { PlayerMarker } from './PlayerMarker';
 import { IconButton } from './IconButton';
 import { CourtSvg } from './CourtSvg';
+import { Court3DView, Step3D } from './Court3DView';
+import { courtPointFromScreen } from '../utils/court3d';
 import { useCourtPositions } from '../hooks/useCourtPositions';
 import { STEP_SET_LIMIT, useStepSets } from '../hooks/useStepSets';
 import { PositionTrail } from './PositionTrail';
@@ -116,12 +118,17 @@ export default function BadmintonCourt() {
   };
 
   // The painted lines sit inset from the edges; the green mat fills the screen.
-  const linesRect = {
-    x: LINES_SIDE_INSET,
-    y: area.y + LINES_GAP,
-    width: area.width - LINES_SIDE_INSET * 2,
-    height: area.height - LINES_GAP * 2,
-  };
+  // Stable identity: the 3D layer keys its projection and step memos off it.
+  const { y: areaY, width: areaW, height: areaH } = area;
+  const linesRect = useMemo(
+    () => ({
+      x: LINES_SIDE_INSET,
+      y: areaY + LINES_GAP,
+      width: areaW - LINES_SIDE_INSET * 2,
+      height: areaH - LINES_GAP * 2,
+    }),
+    [areaY, areaW, areaH]
+  );
   const courtDimensions = { width: screenWidth, height: screenHeight, linesRect };
 
   const onRootLayout = (event: LayoutChangeEvent) => {
@@ -190,6 +197,7 @@ export default function BadmintonCourt() {
     clearSteps,
     undo,
     redo,
+    goToStep,
     canUndo,
     canRedo,
     showPlayerTrails,
@@ -205,6 +213,87 @@ export default function BadmintonCourt() {
   const togetherCount = togetherMoved
     ? [...togetherMoved.team1, ...togetherMoved.team2, togetherMoved.shuttle].filter(Boolean).length
     : 0;
+
+  // ── Tilt-to-3D ─────────────────────────────────────────────────────────
+  // `tilt` is the 2D↔3D blend b; toggling tweens it, and the 3D layer stays
+  // mounted until it lands back on 0 so the court morphs instead of popping.
+  const [is3D, setIs3D] = useState(false);
+  const [isPlaying3D, setIsPlaying3D] = useState(false);
+  const [tilt, setTilt] = useState(0);
+  const tiltRef = useRef(0);
+  const tiltRaf = useRef<number | null>(null);
+
+  const animateTilt = useCallback((target: number) => {
+    if (tiltRaf.current != null) cancelAnimationFrame(tiltRaf.current);
+    const from = tiltRef.current;
+    const t0 = performance.now();
+    const DUR = 430;
+    const frame = (now: number) => {
+      let u = Math.min(1, (now - t0) / DUR);
+      u = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      const v = from + (target - from) * u;
+      tiltRef.current = v;
+      setTilt(v);
+      if (u < 1) tiltRaf.current = requestAnimationFrame(frame);
+    };
+    tiltRaf.current = requestAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => () => {
+    if (tiltRaf.current != null) cancelAnimationFrame(tiltRaf.current);
+  }, []);
+
+  const setMode3D = (to3D: boolean) => {
+    if (to3D === is3D) return;
+    setIs3D(to3D);
+    // Only one playback clock at a time: 3D flights vs the 2D step interval.
+    if (to3D) setIsPlaying(false);
+    else setIsPlaying3D(false);
+    animateTilt(to3D ? 1 : 0);
+  };
+
+  const show3D = is3D || tilt > 0.001;
+
+  // Current history rendered as court-unit pins (positions are view top-left).
+  const steps3d: Step3D[] = useMemo(() => {
+    const teamIds: ('P1' | 'P2' | 'P3' | 'P4')[][] = isDoubles
+      ? [['P1', 'P2'], ['P3', 'P4']]
+      : [['P1'], ['P3']];
+    const pin = (pos: { x: number; y: number }, id: 'P1' | 'P2' | 'P3' | 'P4') => {
+      const c = customizations[id];
+      return {
+        ...courtPointFromScreen(pos.x + c.size / 2, pos.y + c.size / 2, linesRect),
+        color: c.color,
+        size: c.size,
+      };
+    };
+    const shuttleHalf = customizations.Shuttle.size / 2;
+    return getStepsSnapshot().map((step) => ({
+      players: [
+        ...step.players.team1.map((pos, i) => pin(pos, teamIds[0][i])),
+        ...step.players.team2.map((pos, i) => pin(pos, teamIds[1][i])),
+      ],
+      shuttle: courtPointFromScreen(
+        step.shuttle.x + shuttleHalf,
+        step.shuttle.y + shuttleHalf,
+        linesRect
+      ),
+    }));
+  }, [customizations, getStepsSnapshot, isDoubles, linesRect]);
+
+  const advance3D = useCallback(() => {
+    if (canRedo) redo();
+    else goToStep(0); // loop the rally like the prototype
+  }, [canRedo, redo, goToStep]);
+
+  const step3DIndex = stepCount - 1;
+  const back3D = () => goToStep(step3DIndex === 0 ? totalSteps - 1 : step3DIndex - 1);
+  const next3D = () => goToStep((step3DIndex + 1) % totalSteps);
+
+  // A freshly loaded/reset board can drop below 2 steps mid-playback.
+  useEffect(() => {
+    if (totalSteps < 2 && isPlaying3D) setIsPlaying3D(false);
+  }, [totalSteps, isPlaying3D]);
 
   // Once the real court area is measured, re-seed the default positions —
   // but only while the board is pristine (nothing moved, no history).
@@ -370,12 +459,31 @@ export default function BadmintonCourt() {
   return (
     <View style={styles.container} onLayout={onRootLayout}>
       {/* Full-bleed court */}
-      <View style={StyleSheet.absoluteFill}>
-        <CourtSvg width={screenWidth} height={screenHeight} linesRect={linesRect} />
-      </View>
+      {!show3D && (
+        <View style={StyleSheet.absoluteFill}>
+          <CourtSvg width={screenWidth} height={screenHeight} linesRect={linesRect} />
+        </View>
+      )}
+
+      {/* Tilted world: replaces the flat court and markers while tilt > 0 */}
+      {show3D && (
+        <Court3DView
+          width={screenWidth}
+          height={screenHeight}
+          linesRect={linesRect}
+          b={tilt}
+          steps={steps3d}
+          playing={isPlaying3D}
+          onAdvance={advance3D}
+          showPlayerTrails={showPlayerTrails}
+          showShuttleTrail={showShuttleTrail}
+          shuttleSize={customizations.Shuttle.size}
+          hintBottom={dockBottom + estimatedDockHeight + 12}
+        />
+      )}
 
       {/* Trails + markers (coordinates are screen coordinates) */}
-      {showPlayerTrails && playerPositions.team1.map((pos, index) => (
+      {!show3D && showPlayerTrails && playerPositions.team1.map((pos, index) => (
         ghostPositions?.team1[index] && (
           <PositionTrail
             key={`trail-team1-${index}`}
@@ -385,7 +493,7 @@ export default function BadmintonCourt() {
           />
         )
       ))}
-      {showPlayerTrails && playerPositions.team2.map((pos, index) => (
+      {!show3D && showPlayerTrails && playerPositions.team2.map((pos, index) => (
         ghostPositions?.team2[index] && (
           <PositionTrail
             key={`trail-team2-${index}`}
@@ -395,7 +503,7 @@ export default function BadmintonCourt() {
           />
         )
       ))}
-      {showShuttleTrail && shuttlePosition && ghostPositions?.shuttle && (
+      {!show3D && showShuttleTrail && shuttlePosition && ghostPositions?.shuttle && (
         <PositionTrail
           currentPosition={shuttlePosition}
           ghostPosition={ghostPositions.shuttle}
@@ -403,7 +511,7 @@ export default function BadmintonCourt() {
         />
       )}
 
-      {playerPositions.team1.map((pos, index) => (
+      {!show3D && playerPositions.team1.map((pos, index) => (
         <PlayerMarker
           key={`team1-${index}`}
           position={pos}
@@ -423,7 +531,7 @@ export default function BadmintonCourt() {
           onIconChange={(icon) => updateMarkerCustomization(index === 0 ? 'P1' : 'P2', { icon })}
         />
       ))}
-      {playerPositions.team2.map((pos, index) => (
+      {!show3D && playerPositions.team2.map((pos, index) => (
         <PlayerMarker
           key={`team2-${index}`}
           position={pos}
@@ -444,25 +552,28 @@ export default function BadmintonCourt() {
         />
       ))}
 
-      <PlayerMarker
-        position={shuttlePosition}
-        color={customizations.Shuttle.color}
-        size={customizations.Shuttle.size}
-        icon={customizations.Shuttle.icon}
-        iconType={customizations.Shuttle.iconType}
-        linked={!!togetherMoved?.shuttle}
-        glideMs={stepAnimationMs}
-        locked={isPlayback}
-        onPositionChange={updateShuttlePosition}
-        onPositionStart={(newPos) => updateShuttlePosition(newPos, true)}
-        onPositionChangeComplete={handlePositionChangeComplete}
-        onColorChange={(color) => updateMarkerCustomization('Shuttle', { color })}
-        onSizeChange={(size) => updateMarkerCustomization('Shuttle', { size })}
-        onIconChange={(icon) => updateMarkerCustomization('Shuttle', { icon })}
-      />
+      {!show3D && (
+        <PlayerMarker
+          position={shuttlePosition}
+          color={customizations.Shuttle.color}
+          size={customizations.Shuttle.size}
+          icon={customizations.Shuttle.icon}
+          iconType={customizations.Shuttle.iconType}
+          linked={!!togetherMoved?.shuttle}
+          glideMs={stepAnimationMs}
+          locked={isPlayback}
+          onPositionChange={updateShuttlePosition}
+          onPositionStart={(newPos) => updateShuttlePosition(newPos, true)}
+          onPositionChangeComplete={handlePositionChangeComplete}
+          onColorChange={(color) => updateMarkerCustomization('Shuttle', { color })}
+          onSizeChange={(size) => updateMarkerCustomization('Shuttle', { size })}
+          onIconChange={(icon) => updateMarkerCustomization('Shuttle', { icon })}
+        />
+      )}
 
-      {/* Floating header: mode/drill pill + customize button (stays Settings
-          in playback too; the banner ✕ is the only dismiss control) */}
+      {/* Floating header: mode/drill pill + 2D/3D switch + customize button
+          (stays Settings in playback too; the banner ✕ is the only dismiss
+          control) */}
       <View style={[styles.header, { marginTop: headerTop }]} pointerEvents="box-none">
         {isPlayback && loadedDrill ? (
           <Pressable style={styles.namePill} onPress={() => setInfoOpen((open) => !open)}>
@@ -475,7 +586,9 @@ export default function BadmintonCourt() {
               size={14}
               color={palette.textSecondary}
             />
-            <Text style={[styles.namePillCount, isPlaying && { color: palette.accent }]}>
+            <Text
+              style={[styles.namePillCount, (isPlaying || isPlaying3D) && { color: palette.accent }]}
+            >
               {stepCount}/{totalSteps}
             </Text>
             <View style={styles.namePillTrack}>
@@ -487,12 +600,27 @@ export default function BadmintonCourt() {
         ) : (
           <View style={styles.modePill}>
             <MaterialCommunityIcons name="badminton" size={18} color={palette.textPrimary} />
-            <Text style={styles.modePillLabel}>
+            <Text style={styles.modePillLabel} numberOfLines={1}>
               {isDoubles ? 'Doubles' : 'Singles'} · Step {stepCount}
+              {is3D ? `/${totalSteps}` : ''}
             </Text>
           </View>
         )}
         <View style={styles.headerActions}>
+          <View style={styles.modeSegment}>
+            <Pressable
+              onPress={() => setMode3D(false)}
+              style={[styles.segmentBtn, !is3D && styles.segmentBtnActive]}
+            >
+              <Text style={[styles.segmentText, !is3D && styles.segmentTextActive]}>2D</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setMode3D(true)}
+              style={[styles.segmentBtn, is3D && styles.segmentBtnActive]}
+            >
+              <Text style={[styles.segmentText, is3D && styles.segmentTextActive]}>3D</Text>
+            </Pressable>
+          </View>
           <Pressable
             onPress={() => setDrillHubTab('vault')}
             hitSlop={8}
@@ -517,8 +645,9 @@ export default function BadmintonCourt() {
         </View>
       </View>
 
-      {/* Playback lock banner (✕ dismisses just the banner) */}
-      {isPlayback && !lockBannerDismissed && !infoOpen && (
+      {/* Playback lock banner (✕ dismisses just the banner; 2D only — in 3D
+          nothing is draggable anyway) */}
+      {!show3D && isPlayback && !lockBannerDismissed && !infoOpen && (
         <View
           style={[styles.lockBanner, { top: headerTop + HEADER_HEIGHT + spacing.md }]}
           pointerEvents="box-none"
@@ -570,7 +699,7 @@ export default function BadmintonCourt() {
       )}
 
       {/* Armed-Together banner (visual only; never blocks drags underneath) */}
-      {isTogether && (
+      {!show3D && isTogether && (
         <View
           style={[styles.togetherBanner, { top: headerTop + HEADER_HEIGHT + spacing.md }]}
           pointerEvents="none"
@@ -588,9 +717,31 @@ export default function BadmintonCourt() {
       {/* Court area spacer between header and dock — its measured rect hosts the lines */}
       <View style={styles.courtArea} pointerEvents="none" onLayout={onCourtAreaLayout} />
 
-      {/* Floating bottom dock */}
+      {/* Floating bottom dock: edit controls in 2D, playback controls in 3D */}
       <View style={[styles.dock, { marginBottom: dockBottom }]}>
-        {isPlayback ? (
+        {is3D ? (
+          <>
+            <IconButton
+              icon="skip-previous"
+              label="Back"
+              onPress={back3D}
+              disabled={totalSteps < 2}
+            />
+            <IconButton
+              icon={isPlaying3D ? 'pause' : 'play'}
+              label={isPlaying3D ? 'Pause' : 'Play'}
+              onPress={() => setIsPlaying3D((prev) => !prev)}
+              active
+              disabled={totalSteps < 2}
+            />
+            <IconButton
+              icon="skip-next"
+              label="Next"
+              onPress={next3D}
+              disabled={totalSteps < 2}
+            />
+          </>
+        ) : isPlayback ? (
           <>
             <IconButton icon="source-fork" label="Fork" onPress={handleFork} />
             <IconButton icon="step-backward" label="Back" onPress={stepBack} disabled={!canUndo} />
@@ -691,6 +842,7 @@ const styles = StyleSheet.create({
   },
   modePill: {
     height: HEADER_HEIGHT,
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -700,6 +852,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.glassPillBorder,
     ...shadows.card,
+  },
+  modeSegment: {
+    height: HEADER_HEIGHT,
+    flexDirection: 'row',
+    borderRadius: radii.pill,
+    backgroundColor: palette.glassPill,
+    borderWidth: 1,
+    borderColor: palette.glassPillBorder,
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  segmentBtn: {
+    paddingHorizontal: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentBtnActive: {
+    backgroundColor: palette.accent,
+  },
+  segmentText: {
+    ...sora('700'),
+    fontSize: 11,
+    color: palette.textSecondary,
+  },
+  segmentTextActive: {
+    color: palette.onAccent,
   },
   modePillLabel: {
     ...sora('600'),
@@ -744,7 +922,9 @@ const styles = StyleSheet.create({
   // Drill name pill: like the mode pill, plus a step progress bar at the bottom.
   namePill: {
     height: HEADER_HEIGHT + 2,
-    maxWidth: '78%',
+    // Shrinks below its content (name truncates) so the 2D/3D switch and the
+    // header icons never get pushed off-screen; RN flexShrink defaults to 0.
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,

@@ -243,6 +243,11 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     if (currentIndex < positionHistory.length - 1) setCurrentIndex(prev => prev + 1);
   }, [currentIndex, positionHistory.length]);
 
+  // Jump straight to a history step (3D playback wraps around with this).
+  const goToStep = useCallback((index: number) => {
+    setCurrentIndex(Math.max(0, Math.min(index, positionHistory.length - 1)));
+  }, [positionHistory.length]);
+
   const togglePlayerTrails = useCallback(() => {
     setShowPlayerTrails(prev => !prev);
   }, []);
@@ -314,6 +319,7 @@ export function useCourtPositions(courtDimensions: CourtDimensions) {
     clearSteps,
     undo,
     redo,
+    goToStep,
     canUndo: currentIndex > 0,
     canRedo: currentIndex < positionHistory.length - 1,
     lastStationaryPlayers: positionHistory[currentIndex]?.lastStationaryPositions?.team1 && {

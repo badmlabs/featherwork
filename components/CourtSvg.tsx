@@ -24,14 +24,16 @@ interface CourtSvgProps {
 }
 
 // Real BWF proportions, 1 unit = 1 cm, full doubles court 610 x 1340.
-const COURT_W = 610;
-const COURT_H = 1340;
-const SINGLES_X = [46, 564];
-const LONG_SERVICE_Y = [76, 1264];
-const SHORT_SERVICE_Y = [472, 868];
-const CENTER_X = 305;
-const NET_Y = 670;
-const LINE_UNITS = 4; // real 40mm painted lines
+// Shared with the 3D projection (utils/court3d.ts).
+export const COURT_W = 610;
+export const COURT_H = 1340;
+export const SINGLES_X = [46, 564];
+export const LONG_SERVICE_Y = [76, 1264];
+export const SHORT_SERVICE_Y = [472, 868];
+export const CENTER_X = 305;
+export const NET_Y = 670;
+export const LINE_UNITS = 4; // real 40mm painted lines
+export const NET_OVERHANG_UNITS = 20; // posts sit past the doubles sidelines
 
 /**
  * Full-bleed "Match Point" court: green gradient edge-to-edge, white 80%
@@ -49,7 +51,7 @@ function CourtSvgComponent({ width, height, linesRect }: CourtSvgProps) {
   };
 
   const netY = Y(NET_Y);
-  const netOverhang = 20 * sx;
+  const netOverhang = NET_OVERHANG_UNITS * sx;
 
   return (
     <Svg width={width} height={height}>
