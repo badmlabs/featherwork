@@ -286,19 +286,14 @@ export default function BadmintonCourt() {
         onIconChange={(icon) => updateMarkerCustomization('Shuttle', { icon })}
       />
 
-      {/* Floating header: mode pill + customize button */}
+      {/* Floating header: mode status pill + customize button */}
       <View style={[styles.header, { marginTop: headerTop }]} pointerEvents="box-none">
-        <Pressable
-          onPress={() => toggleGameMode(!isDoubles)}
-          hitSlop={8}
-          style={({ pressed }) => [styles.modePill, pressed && styles.glassPressed]}
-        >
+        <View style={styles.modePill}>
           <MaterialCommunityIcons name="badminton" size={18} color={palette.textPrimary} />
           <Text style={styles.modePillLabel}>
             {isDoubles ? 'Doubles' : 'Singles'} · Step {stepCount}
           </Text>
-          <MaterialCommunityIcons name="chevron-down" size={16} color={palette.textSecondary} />
-        </Pressable>
+        </View>
         <Pressable
           onPress={() => setIsMenuVisible(true)}
           hitSlop={8}
@@ -338,6 +333,8 @@ export default function BadmintonCourt() {
       <SettingsPanel
         isVisible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}
+        isDoubles={isDoubles}
+        onGameModeChange={toggleGameMode}
       />
 
       <StepSetsPanel

@@ -240,10 +240,17 @@ function MarkerItem({ markerId, title, customizations, updateMarkerCustomization
 interface SettingsPanelProps {
   isVisible: boolean;
   onClose: () => void;
+  isDoubles: boolean;
+  onGameModeChange: (isDoubles: boolean) => void;
 }
 
-export function SettingsPanel({ isVisible, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ isVisible, onClose, isDoubles, onGameModeChange }: SettingsPanelProps) {
   const { customizations, updateMarkerCustomization, resetCustomizations } = useMarkerCustomization();
+
+  // Switching mode reseeds the court, so ignore taps on the already-active option.
+  const selectMode = (doubles: boolean) => {
+    if (doubles !== isDoubles) onGameModeChange(doubles);
+  };
 
   const confirmReset = () => {
     appAlert(
@@ -274,7 +281,7 @@ export function SettingsPanel({ isVisible, onClose }: SettingsPanelProps) {
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>Customize</Text>
-              <Text style={styles.headerSubtitle}>Marker colors, icons and sizes</Text>
+              <Text style={styles.headerSubtitle}>Game mode, marker colors, icons and sizes</Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={8} style={styles.closeButton}>
               <MaterialCommunityIcons name="close" size={18} color={palette.textPrimary} />
@@ -286,6 +293,36 @@ export function SettingsPanel({ isVisible, onClose }: SettingsPanelProps) {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            <Text style={styles.sectionLabel}>Game mode</Text>
+            <View style={styles.modeCard}>
+              <TouchableOpacity
+                style={[styles.modeOption, !isDoubles && styles.modeOptionActive]}
+                onPress={() => selectMode(false)}
+              >
+                <MaterialCommunityIcons
+                  name="account"
+                  size={15}
+                  color={!isDoubles ? palette.onAccent : palette.textSecondary}
+                />
+                <Text style={[styles.modeOptionText, !isDoubles && styles.modeOptionTextActive]}>
+                  Singles
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeOption, isDoubles && styles.modeOptionActive]}
+                onPress={() => selectMode(true)}
+              >
+                <MaterialCommunityIcons
+                  name="account-multiple"
+                  size={15}
+                  color={isDoubles ? palette.onAccent : palette.textSecondary}
+                />
+                <Text style={[styles.modeOptionText, isDoubles && styles.modeOptionTextActive]}>
+                  Doubles
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.sectionLabel}>Team 1</Text>
             <MarkerItem
               markerId="P1"
@@ -411,6 +448,37 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     marginTop: spacing.md,
     marginBottom: 7,
+  },
+  modeCard: {
+    flexDirection: 'row',
+    gap: 5,
+    backgroundColor: palette.card,
+    borderWidth: 1,
+    borderColor: palette.cardBorder,
+    borderRadius: radii.md,
+    padding: 5,
+    marginBottom: 6,
+  },
+  modeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 38,
+    borderRadius: radii.sm,
+  },
+  modeOptionActive: {
+    backgroundColor: palette.accent,
+  },
+  modeOptionText: {
+    ...sora('600'),
+    fontSize: 13,
+    color: palette.textSecondary,
+  },
+  modeOptionTextActive: {
+    ...sora('700'),
+    color: palette.onAccent,
   },
   rowCard: {
     flexDirection: 'row',
