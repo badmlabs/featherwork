@@ -322,6 +322,11 @@ export default function BadmintonCourt() {
             style={({ pressed }) => [styles.headerAction, pressed && styles.glassPressed]}
           >
             <MaterialCommunityIcons name="treasure-chest" size={20} color={palette.accent} />
+            {vault.isSubscribed && (
+              <View style={styles.proBadge}>
+                <Text style={styles.proBadgeText}>PRO</Text>
+              </View>
+            )}
           </Pressable>
           <Pressable
             onPress={() => setIsMenuVisible(true)}
@@ -434,6 +439,22 @@ const styles = StyleSheet.create({
   },
   glassPressed: {
     backgroundColor: 'rgba(6, 26, 18, 0.62)',
+  },
+  proBadge: {
+    position: 'absolute',
+    bottom: -5,
+    alignSelf: 'center',
+    backgroundColor: palette.accent,
+    borderRadius: radii.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    ...shadows.card,
+  },
+  proBadgeText: {
+    ...sora('700'),
+    fontSize: 8,
+    letterSpacing: 0.6,
+    color: palette.onAccent,
   },
   dock: {
     marginHorizontal: 14,

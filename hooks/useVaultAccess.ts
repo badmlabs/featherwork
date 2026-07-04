@@ -3,6 +3,7 @@ import { Linking } from 'react-native';
 import Purchases, {
   CustomerInfo,
   PACKAGE_TYPE,
+  PURCHASES_ERROR_CODE,
   PurchasesPackage,
 } from 'react-native-purchases';
 
@@ -93,9 +94,22 @@ export function useVaultAccess() {
       try {
         const { customerInfo: info } = await Purchases.purchasePackage(pkg);
         setCustomerInfo(info);
-        return hasPro(info);
+        if (!hasPro(info)) {
+          throw new Error(
+            'Payment went through, but Pro has not activated yet. ' +
+              'Tap "Restore purchases" in a minute — if it persists, contact support.'
+          );
+        }
+        return true;
       } catch (error) {
-        if ((error as { userCancelled?: boolean })?.userCancelled) return false;
+        const err = error as { userCancelled?: boolean; code?: string };
+        if (err?.userCancelled) return false;
+        if (err?.code === PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR) {
+          // Play refuses to sell what the account already owns — sync instead.
+          const info = await Purchases.restorePurchases();
+          setCustomerInfo(info);
+          return hasPro(info);
+        }
         throw error;
       }
     },
