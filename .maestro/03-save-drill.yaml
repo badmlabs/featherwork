@@ -1,0 +1,27 @@
+# CUF: build a step, save it as a named drill, see it in My Drills.
+appId: com.haritabhgupta.badmintoncourtsimulator
+---
+- launchApp:
+    clearState: true
+# settle: the court re-seeds once the real layout is measured right after
+# launch; swiping before that eats the gesture (flake seen locally)
+- assertVisible: "Doubles.*Step 1"
+- swipe:
+    start: 30%, 35%
+    end: 45%, 20%
+    duration: 800
+- assertVisible: "Doubles.*Step 2"
+- tapOn: "Drills"
+- assertVisible: "My Drills"
+- tapOn: "Save current steps"
+- assertVisible: "Save drill"
+- tapOn: "Name"
+- inputText: "CI Smoke Drill"
+# no hideKeyboard: on CI's soft-keyboard image it closes the dialog like
+# Back; with adjustPan the panned dialog keeps Save tappable anyway
+- tapOn: "Save"
+# dismiss the "has been saved" confirmation alert before checking the list
+- assertVisible: ".*has been saved.*"
+- tapOn: "OK"
+- assertVisible: "CI Smoke Drill"
+- tapOn: "Close drills"

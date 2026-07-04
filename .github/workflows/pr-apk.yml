@@ -73,3 +73,55 @@ jobs:
           name: apk-pr${{ github.event.number }}
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
+
+  # Records a video of each critical user flow (.maestro/*.yaml) on an
+  # emulator and uploads them as an artifact — download from the run page.
+  # ponytail: no AVD snapshot caching; add the two-pass cache from the
+  # android-emulator-runner README if the ~5 min boot starts to hurt.
+  cuf-videos:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: apk-pr${{ github.event.number }}
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Record critical user flows
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          # the action runs `script:` line-by-line under sh — loops must live
+          # in a real script file
+          script: bash ./scripts/record-cufs.sh
+
+      - name: Upload CUF Videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuf-videos-pr${{ github.event.number }}
+          path: cuf-videos/
+          retention-days: 14

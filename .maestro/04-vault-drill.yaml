@@ -1,0 +1,33 @@
+# CUF: browse the Drill Vault, hit the paywall on a premium drill,
+# load a free singles drill and step through it (trails are on by default).
+appId: com.haritabhgupta.badmintoncourtsimulator
+---
+- launchApp:
+    clearState: true
+- tapOn: "Drills"
+- tapOn: "Drill Vault"
+- assertVisible: "Four-Corner Shadow"
+- assertVisible: "FREE"
+# en-dashes in the name matched loosely; first premium drill in the vault
+- scrollUntilVisible:
+    element:
+      text: "Clear.Drop.Net Squeeze"
+    direction: DOWN
+- tapOn: "Clear.Drop.Net Squeeze"
+- assertVisible: "Drill Vault Pro"
+- assertVisible: "Restore purchases"
+- tapOn: "Close paywall"
+- scrollUntilVisible:
+    element:
+      text: "Four-Corner Shadow"
+    direction: UP
+- tapOn: "Four-Corner Shadow"
+# loading a drill enters locked playback: banner + "name · 1/9" header,
+# and the dock swaps to Fork/Back/Next/Play
+- assertVisible: "Drill loaded.*"
+- assertVisible: "1/9"
+- repeat:
+    times: 6
+    commands:
+      - tapOn: "Next"
+- assertVisible: "7/9"

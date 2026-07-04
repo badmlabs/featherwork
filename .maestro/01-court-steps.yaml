@@ -1,0 +1,27 @@
+# CUF: move markers, step counter, undo/redo/reset.
+# App defaults: doubles mode, trails on. Swipe coordinates target the default
+# doubles positions (top-left player 25%/30% of court, shuttle 54%/59%); the
+# Step assertions fail if a drag misses, so a layout change shows up here.
+appId: com.haritabhgupta.badmintoncourtsimulator
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Doubles.*Step 1"
+- swipe:
+    start: 30%, 35%
+    end: 45%, 20%
+    duration: 800
+- assertVisible: "Doubles.*Step 2"
+- swipe:
+    start: 53%, 56%
+    end: 70%, 45%
+    duration: 800
+- assertVisible: "Doubles.*Step 3"
+- tapOn: "Undo"
+- assertVisible: "Doubles.*Step 2"
+- tapOn: "Redo"
+- assertVisible: "Doubles.*Step 3"
+# with steps built the first dock slot is "Clear" (wipes the stack,
+# keeps positions); it only reads "Reset" while the board is pristine
+- tapOn: "Clear"
+- assertVisible: "Doubles.*Step 1"

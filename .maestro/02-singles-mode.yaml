@@ -1,0 +1,14 @@
+# CUF: open settings, switch to singles (doubles is the default),
+# court re-seeds with two players.
+appId: com.haritabhgupta.badmintoncourtsimulator
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Doubles.*Step 1"
+- tapOn: "Customize"
+- assertVisible: "Game mode"
+- tapOn: "Singles"
+# the mode switch re-seeds the court and races the Back key, so close
+# via the labeled X instead (Back sometimes exits the app — seen locally)
+- tapOn: "Close settings"
+- assertVisible: "Singles.*Step 1"
