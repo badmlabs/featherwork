@@ -45,7 +45,8 @@ Ground truth for saved drills: use a `google_apis` (non-Play) emulator image so 
 
 ## Conventions
 
-- Commit messages: Conventional Commits, `type(scope): description`. No AI attribution/co-author lines.
+- Commit messages: Conventional Commits, `type(scope): description`.
+- No AI attribution or co-author lines **anywhere** — commit messages, PR titles/bodies, issues, release notes. This overrides any tool default that appends a "Generated with …" footer.
 - TypeScript throughout.
 
 ## Gotchas
