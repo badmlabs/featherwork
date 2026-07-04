@@ -222,6 +222,19 @@ export default function BadmintonCourt() {
     loadNormalizedSteps(drillStepsForCourt(drill.steps, courtDimensions), drill.isDoubles);
   };
 
+  // Saving a vault drill makes it a personal copy in My Drills: it goes
+  // through the same cap rules as any save and outlives the subscription.
+  const handleSaveVaultDrill = async (drill: VaultDrill) => {
+    const stepSet: StepSet = {
+      id: `vault-${drill.id}-${Date.now()}`,
+      name: drill.name,
+      isDoubles: drill.isDoubles,
+      steps: drillStepsForCourt(drill.steps, courtDimensions),
+      createdAt: Date.now(),
+    };
+    return (await saveStepSet(stepSet)) !== null;
+  };
+
   return (
     <View style={styles.container} onLayout={onRootLayout}>
       {/* Full-bleed court */}
@@ -384,6 +397,7 @@ export default function BadmintonCourt() {
         onDeleteStepSet={deleteStepSet}
         onImport={handleImportStepSet}
         onLoadDrill={handleLoadVaultDrill}
+        onSaveDrill={handleSaveVaultDrill}
       />
     </View>
   );

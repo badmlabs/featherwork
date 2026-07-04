@@ -35,6 +35,8 @@ interface DrillHubPanelProps {
   onDeleteStepSet: (id: string) => Promise<void>;
   onImport: (stepSet: StepSet) => Promise<void>;
   onLoadDrill: (drill: VaultDrill) => void;
+  /** Saves a personal copy into My Drills; false when rejected (free-tier cap). */
+  onSaveDrill: (drill: VaultDrill) => Promise<boolean>;
 }
 
 interface ListActionProps {
@@ -77,6 +79,7 @@ export function DrillHubPanel({
   onDeleteStepSet,
   onImport,
   onLoadDrill,
+  onSaveDrill,
 }: DrillHubPanelProps) {
   const { isSubscribed, plans, subscribe, restore, manageSubscription } = vault;
   const [activeTab, setActiveTab] = useState<DrillHubTab>(initialTab);
@@ -107,6 +110,22 @@ export function DrillHubPanel({
     }
     onLoadDrill(drill);
     onClose();
+  };
+
+  const handleSaveDrill = async (drill: VaultDrill) => {
+    if (drill.premium && !isSubscribed) {
+      setPaywallVisible(true);
+      return;
+    }
+    if (stepSets.some((stepSet) => stepSet.name === drill.name)) {
+      appAlert('Already saved', `"${drill.name}" is already in My Drills.`);
+      return;
+    }
+    const saved = await onSaveDrill(drill);
+    if (saved) {
+      appAlert('Saved', `"${drill.name}" is now in My Drills — yours to keep and edit.`);
+    }
+    // false = cap reached; the save hook already showed the upgrade prompt.
   };
 
   const handleSubscribe = async () => {
@@ -430,6 +449,7 @@ export function DrillHubPanel({
                 <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
                   {drills.map((drill) => {
                     const locked = drill.premium && !isSubscribed;
+                    const isSaved = stepSets.some((stepSet) => stepSet.name === drill.name);
                     return (
                       <TouchableOpacity
                         key={drill.id}
@@ -463,12 +483,27 @@ export function DrillHubPanel({
                             </View>
                           )}
                         </View>
-                        <View style={[styles.cardAction, locked && styles.cardActionLocked]}>
-                          <MaterialCommunityIcons
-                            name={locked ? 'lock' : 'play'}
-                            size={18}
-                            color={locked ? palette.textMuted : palette.onAccent}
-                          />
+                        <View style={styles.cardActions}>
+                          <View style={[styles.cardAction, locked && styles.cardActionLocked]}>
+                            <MaterialCommunityIcons
+                              name={locked ? 'lock' : 'play'}
+                              size={18}
+                              color={locked ? palette.textMuted : palette.onAccent}
+                            />
+                          </View>
+                          {!locked && (
+                            <TouchableOpacity
+                              style={styles.cardSaveAction}
+                              onPress={() => handleSaveDrill(drill)}
+                              hitSlop={6}
+                            >
+                              <MaterialCommunityIcons
+                                name={isSaved ? 'bookmark-check' : 'bookmark-plus-outline'}
+                                size={18}
+                                color={isSaved ? palette.accent : palette.textPrimary}
+                              />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </TouchableOpacity>
                     );
@@ -1012,6 +1047,20 @@ const styles = StyleSheet.create({
   cardActionLocked: {
     backgroundColor: 'rgba(255, 255, 255, 0.10)',
     borderColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  cardActions: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardSaveAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dialogOverlay: {
     flex: 1,
