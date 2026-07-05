@@ -7,14 +7,14 @@ import { appAlert } from '../utils/appAlert';
 import { StepSet } from '../types/drill';
 import { decodeSharedStepSet, getShareMessage } from '../utils/stepSharing';
 import {
-  PREMIUM_DRILL_COUNT,
   VAULT_CATEGORIES,
   VAULT_DRILLS,
   VaultCategory,
   VaultDrill,
 } from '../data/vaultDrills';
 import { STEP_SET_LIMIT } from '../hooks/useStepSets';
-import { useVaultAccess, VaultPlan } from '../hooks/useVaultAccess';
+import { useVaultAccess } from '../hooks/useVaultAccess';
+import { ProPaywall } from './ProPaywall';
 import { palette, radii, shadows, sora, spacing } from '../constants/theme';
 
 export type DrillHubTab = 'mine' | 'vault';
@@ -81,12 +81,10 @@ export function DrillHubPanel({
   onLoadDrill,
   onSaveDrill,
 }: DrillHubPanelProps) {
-  const { isSubscribed, plans, subscribe, restore, manageSubscription } = vault;
+  const { isSubscribed, manageSubscription } = vault;
   const [activeTab, setActiveTab] = useState<DrillHubTab>(initialTab);
   const [activeCategory, setActiveCategory] = useState<VaultCategory | 'All'>('All');
   const [paywallVisible, setPaywallVisible] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<VaultPlan>('yearly');
-  const [isPurchasing, setIsPurchasing] = useState(false);
   const [saveDialogVisible, setSaveDialogVisible] = useState(false);
   const [stepSetName, setStepSetName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -126,45 +124,6 @@ export function DrillHubPanel({
       appAlert('Saved', `"${drill.name}" is now in My Drills — yours to keep and edit.`);
     }
     // false = cap reached; the save hook already showed the upgrade prompt.
-  };
-
-  const handleSubscribe = async () => {
-    setIsPurchasing(true);
-    try {
-      const active = await subscribe(selectedPlan);
-      if (active) {
-        setPaywallVisible(false);
-        appAlert(
-          'Welcome to Drill Vault Pro',
-          'All premium drills are unlocked. Load any drill and step through it on court.'
-        );
-      }
-      // false = user backed out of the Play sheet; nothing to say.
-    } catch (error) {
-      appAlert(
-        'Purchase failed',
-        error instanceof Error ? error.message : 'Could not complete the purchase. Please try again.'
-      );
-      console.error(error);
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
-  const handleRestore = async () => {
-    try {
-      const active = await restore();
-      appAlert(
-        active ? 'Purchases restored' : 'Nothing to restore',
-        active
-          ? 'Drill Vault Pro is active on this device.'
-          : 'No previous Drill Vault Pro purchase was found for this Google account.'
-      );
-      if (active) setPaywallVisible(false);
-    } catch (error) {
-      appAlert('Restore failed', 'Could not reach Google Play. Please try again later.');
-      console.error(error);
-    }
   };
 
   const handleSave = async () => {
@@ -520,100 +479,11 @@ export function DrillHubPanel({
         </View>
       </Modal>
 
-      <Portal>
-        <Modal
-          visible={paywallVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setPaywallVisible(false)}
-        >
-          <View style={styles.dialogOverlay}>
-            <View style={styles.dialogCard}>
-              <View style={styles.paywallHeader}>
-                <View style={styles.paywallBadge}>
-                  <MaterialCommunityIcons name="treasure-chest" size={26} color={palette.accent} />
-                </View>
-                <TouchableOpacity
-                  onPress={() => setPaywallVisible(false)}
-                  hitSlop={8}
-                  accessibilityLabel="Close paywall"
-                  style={styles.closeButton}
-                >
-                  <MaterialCommunityIcons name="close" size={18} color={palette.textPrimary} />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.paywallTitle}>Drill Vault Pro</Text>
-              <Text style={styles.paywallPromise}>
-                Unlock premium badminton drills and tactical patterns, updated regularly, ready to
-                load directly onto the court.
-              </Text>
-
-              {[
-                `${PREMIUM_DRILL_COUNT} premium drills & tactical patterns`,
-                'New drills added every month',
-                "Coach's tips on every drill",
-                `Unlimited saved drills (free keeps ${STEP_SET_LIMIT})`,
-              ].map((line) => (
-                <View key={line} style={styles.bulletRow}>
-                  <MaterialCommunityIcons name="check-circle" size={16} color={palette.accent} />
-                  <Text style={styles.bulletText}>{line}</Text>
-                </View>
-              ))}
-
-              <Text style={styles.comingSoonLabel}>Coming soon to Pro</Text>
-              {[
-                { icon: 'play-speed', text: 'Auto-play practice mode for courtside training' },
-                { icon: 'account-group-outline', text: 'Club workspace: team libraries & session plans' },
-              ].map(({ icon, text }) => (
-                <View key={text} style={styles.bulletRow}>
-                  <MaterialCommunityIcons name={icon as any} size={16} color={palette.textMuted} />
-                  <Text style={styles.comingSoonText}>{text}</Text>
-                </View>
-              ))}
-
-              <View style={styles.planRow}>
-                {plans.map((plan) => {
-                  const selected = selectedPlan === plan.id;
-                  return (
-                    <TouchableOpacity
-                      key={plan.id}
-                      style={[styles.planCard, selected && styles.planCardSelected]}
-                      onPress={() => setSelectedPlan(plan.id)}
-                    >
-                      {plan.note && (
-                        <View style={styles.planNote}>
-                          <Text style={styles.planNoteText}>{plan.note}</Text>
-                        </View>
-                      )}
-                      <Text style={[styles.planLabel, selected && styles.planLabelSelected]}>
-                        {plan.label}
-                      </Text>
-                      <Text style={styles.planPrice}>{plan.price}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <TouchableOpacity
-                style={[styles.subscribeButton, isPurchasing && styles.actionDisabled]}
-                onPress={handleSubscribe}
-                disabled={isPurchasing}
-              >
-                <Text style={styles.subscribeButtonText}>
-                  {isPurchasing ? 'Processing…' : 'Subscribe'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleRestore} hitSlop={6}>
-                <Text style={styles.restoreLink}>Restore purchases</Text>
-              </TouchableOpacity>
-              <Text style={styles.finePrint}>
-                Billed through Google Play as an auto-renewing subscription. Cancel anytime in
-                Play Store → Payments &amp; subscriptions.
-              </Text>
-            </View>
-          </View>
-        </Modal>
-      </Portal>
+      <ProPaywall
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        vault={vault}
+      />
 
       <Portal>
         <Modal
@@ -1082,135 +952,6 @@ const styles = StyleSheet.create({
     borderColor: palette.dialogBorder,
     padding: spacing.xl,
     ...shadows.floating,
-  },
-  paywallHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  paywallBadge: {
-    width: 46,
-    height: 46,
-    borderRadius: radii.sm,
-    backgroundColor: palette.accentSoft,
-    borderWidth: 1,
-    borderColor: amberBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  paywallTitle: {
-    ...sora('700'),
-    fontSize: 19,
-    color: palette.textPrimary,
-    marginTop: spacing.lg,
-  },
-  paywallPromise: {
-    ...sora('400'),
-    color: palette.textSecondary,
-    fontSize: 12.5,
-    lineHeight: 18,
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  bulletText: {
-    ...sora('400'),
-    color: palette.textPrimary,
-    fontSize: 12.5,
-  },
-  comingSoonLabel: {
-    ...sora('700'),
-    fontSize: 10,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: palette.textMuted,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  comingSoonText: {
-    ...sora('400'),
-    color: palette.textMuted,
-    fontSize: 12,
-  },
-  planRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  planCard: {
-    flex: 1,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: palette.cardBorder,
-    backgroundColor: palette.card,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  planCardSelected: {
-    borderColor: palette.accent,
-    backgroundColor: palette.accentSoft,
-  },
-  planNote: {
-    position: 'absolute',
-    top: -9,
-    backgroundColor: palette.accent,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  planNoteText: {
-    ...sora('700'),
-    color: palette.onAccent,
-    fontSize: 9,
-    letterSpacing: 0.4,
-  },
-  planLabel: {
-    ...sora('600'),
-    color: palette.textSecondary,
-    fontSize: 12,
-  },
-  planLabelSelected: {
-    color: palette.accent,
-  },
-  planPrice: {
-    ...sora('700'),
-    color: palette.textPrimary,
-    fontSize: 16,
-    marginTop: 2,
-  },
-  subscribeButton: {
-    height: 50,
-    backgroundColor: palette.accent,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.xl,
-    ...shadows.amberGlow,
-  },
-  subscribeButtonText: {
-    ...sora('700'),
-    color: palette.onAccent,
-    fontSize: 15,
-  },
-  restoreLink: {
-    ...sora('600'),
-    color: palette.textSecondary,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: spacing.md,
-  },
-  finePrint: {
-    ...sora('400'),
-    color: palette.textMuted,
-    fontSize: 10,
-    lineHeight: 14,
-    textAlign: 'center',
-    marginTop: spacing.md,
   },
   nameInput: {
     marginTop: spacing.md,

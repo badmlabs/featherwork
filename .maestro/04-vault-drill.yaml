@@ -14,7 +14,7 @@ appId: com.haritabhgupta.badmintoncourtsimulator
       text: "Clear.Drop.Net Squeeze"
     direction: DOWN
 - tapOn: "Clear.Drop.Net Squeeze"
-- assertVisible: "Drill Vault Pro"
+- assertVisible: "Featherwork Pro"
 - assertVisible: "Restore purchases"
 - tapOn: "Close paywall"
 - scrollUntilVisible:
