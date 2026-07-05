@@ -164,7 +164,7 @@ npx expo run:android --variant release
 ## File Structure
 
 ```
-badminton-court-simulator/
+featherwork/
 ├── components/
 │   ├── BadmintonCourt.tsx          # Main court component
 │   ├── PlayerMarker.tsx            # Draggable player/shuttle markers
