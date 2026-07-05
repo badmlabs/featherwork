@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Badminton court simulator — an Expo (React Native) app using expo-router.
+Featherwork (formerly Badminton Court Simulator) — an Expo (React Native) badminton tactics app using expo-router.
 
 ## Commands
 
