@@ -331,6 +331,8 @@ export default function BadmintonCourt() {
         ...courtPointFromScreen(pos.x + c.size / 2, pos.y + c.size / 2, linesRect),
         color: c.color,
         size: c.size,
+        look: effectiveLooks[id],
+        leftHanded: c.isLeftHanded,
       };
     };
     const shuttleHalf = customizations.Shuttle.size / 2;
@@ -345,7 +347,7 @@ export default function BadmintonCourt() {
         linesRect
       ),
     }));
-  }, [customizations, getStepsSnapshot, isDoubles, linesRect]);
+  }, [customizations, effectiveLooks, getStepsSnapshot, isDoubles, linesRect]);
 
   const advance3D = useCallback(() => {
     if (canRedo) redo();

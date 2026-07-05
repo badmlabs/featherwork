@@ -14,7 +14,8 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { LINE_UNITS, LinesRect } from './CourtSvg';
-import { CourtTheme, courtThemeById } from '../constants/customization';
+import { MascotView, MASCOT_ASPECT } from './mascots';
+import { CourtTheme, courtThemeById, isMascot, LookId, MascotId } from '../constants/customization';
 import { palette, radii, sora } from '../constants/theme';
 import {
   arcPath,
@@ -41,6 +42,9 @@ import {
 export interface Pin3D extends CourtPoint {
   color: string;
   size: number;
+  /** Player look; mascot looks render as full figures instead of pins. */
+  look?: LookId;
+  leftHanded?: boolean;
 }
 
 export interface Step3D {
@@ -211,20 +215,86 @@ export function Court3DView({
   const sw = shuttleSize * clamp(sp3[2], 0.8, 1.3);
   const squash = 1 - 0.58 * b; // ground ellipses foreshorten with the tilt
 
-  // Player pins glide between the previous and current step with the flight
-  const pins = cur.players.map((p, i) => {
+  // Players glide between the previous and current step with the flight.
+  // Mascot looks become full figures (billboarded art); other looks keep pins.
+  const players = cur.players.map((p, i) => {
     const from = prev?.players[i] ?? p;
     const t = prev ? tc : 1;
     const x = from.x + (p.x - from.x) * t;
     const z = from.z + (p.z - from.z) * t;
     const f = project(x, z, 0);
-    const w = p.size * clamp(f[2], 0.8, 1.3);
-    const stemH = Math.max(0, 13 * b * f[2]);
-    // Flat: disc centered on its court spot; tilted: disc stands on a stem.
-    const discCy = f[1] - stemH - w / 2 + (w / 2 + 3) * (1 - b);
-    const glyph = w * 0.44;
-    return { key: i, color: p.color, fx: f[0], fy: f[1], w, stemH, discCy, glyph };
+    return { p, i, z, f };
   });
+
+  const pins = players
+    .filter(({ p }) => !(p.look && isMascot(p.look)))
+    .map(({ p, i, f }) => {
+      const w = p.size * clamp(f[2], 0.8, 1.3);
+      const stemH = Math.max(0, 13 * b * f[2]);
+      // Flat: disc centered on its court spot; tilted: disc stands on a stem.
+      const discCy = f[1] - stemH - w / 2 + (w / 2 + 3) * (1 - b);
+      const glyph = w * 0.44;
+      return { key: i, color: p.color, fx: f[0], fy: f[1], w, stemH, discCy, glyph };
+    });
+
+  // The camera looks from the high-z end, so near-court figures (z past the
+  // net) show their backs — same orientation rule the flat court uses.
+  const sprites = players
+    .filter(({ p }) => p.look && isMascot(p.look))
+    .map(({ p, i, z, f }) => {
+      const facingAway = z > NET_Y;
+      const w = p.size * clamp(f[2], 0.8, 1.3) * (1 + 0.45 * b);
+      const h = w * MASCOT_ASPECT;
+      // b=0: centered on its court spot (matches the flat court exactly);
+      // b=1: feet planted on the contact shadow.
+      const top = f[1] - h / 2 - (h / 2 - w * 0.08) * b;
+      return {
+        key: i,
+        mascot: p.look as MascotId,
+        band: p.color,
+        facingAway,
+        flipped: facingAway ? !!p.leftHanded : !p.leftHanded,
+        left: f[0] - w / 2,
+        top,
+        w,
+        h,
+        fx: f[0],
+        fy: f[1],
+        zc: z,
+        near: facingAway,
+      };
+    });
+  const byDepth = (a: { zc: number }, c: { zc: number }) => a.zc - c.zc;
+  const farSprites = sprites.filter((s) => !s.near).sort(byDepth);
+  const nearSprites = sprites.filter((s) => s.near).sort(byDepth);
+  // Near figures sandwich the shuttle by depth: a shuttle between a player
+  // and the net sits beyond him from the camera, so his body occludes it at
+  // the hit; once it passes behind him it draws over him instead.
+  const shuttleZNow = shuttleCourt[1];
+  const nearBehindShuttle = nearSprites.filter((s) => s.zc < shuttleZNow);
+  const nearOverShuttle = nearSprites.filter((s) => s.zc >= shuttleZNow);
+
+  const spriteShadow = (s: (typeof sprites)[number]) => (
+    <Ellipse
+      key={`msh-${s.key}`}
+      cx={s.fx}
+      cy={s.fy}
+      rx={(s.w * 0.62) / 2}
+      ry={(s.w * 0.24) / 2}
+      fill="rgba(0,0,0,0.33)"
+      opacity={0.25 + 0.75 * b}
+    />
+  );
+
+  const spriteView = (s: (typeof sprites)[number]) => (
+    <View
+      key={`mascot-${s.key}`}
+      pointerEvents="none"
+      style={{ position: 'absolute', left: s.left, top: s.top }}
+    >
+      <MascotView mascot={s.mascot} band={s.band} width={s.w} flipped={s.flipped} facingAway={s.facingAway} />
+    </View>
+  );
 
   const playerTrails =
     showPlayerTrails && prev
@@ -278,16 +348,6 @@ export function Court3DView({
             opacity={0.85 * b}
           />
         )}
-        <Polygon points={netPts} fill="rgba(255,255,255,0.14)" />
-        <Path d={seg(nt1, nt2)} stroke="#FFFFFF" strokeOpacity={0.95} strokeWidth={2.6} strokeLinecap="round" fill="none" />
-        <Path
-          d={`${seg(nb1, nt1)} ${seg(nb2, nt2)}`}
-          stroke="#FFFFFF"
-          strokeOpacity={0.7}
-          strokeWidth={3}
-          strokeLinecap="round"
-          fill="none"
-        />
 
         {playerTrails.map((t) => (
           <Line
@@ -303,6 +363,26 @@ export function Court3DView({
             strokeLinecap="round"
           />
         ))}
+        {farSprites.map(spriteShadow)}
+      </Svg>
+
+      {/* Far-court mascots stand behind the net (each carries its own Svg
+          root so per-mascot gradient ids can never collide). */}
+      {farSprites.map(spriteView)}
+
+      <Svg width={width} height={height} pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <Polygon points={netPts} fill="rgba(255,255,255,0.14)" />
+        <Path d={seg(nt1, nt2)} stroke="#FFFFFF" strokeOpacity={0.95} strokeWidth={2.6} strokeLinecap="round" fill="none" />
+        <Path
+          d={`${seg(nb1, nt1)} ${seg(nb2, nt2)}`}
+          stroke="#FFFFFF"
+          strokeOpacity={0.7}
+          strokeWidth={3}
+          strokeLinecap="round"
+          fill="none"
+        />
+
+        {nearSprites.map(spriteShadow)}
 
         {shot && showShuttleTrail && land && (
           <>
@@ -388,6 +468,13 @@ export function Court3DView({
           </G>
         ))}
 
+      </Svg>
+
+      {/* Near-court mascots stand in front of the net, backs to the camera;
+          those closer to the net than the shuttle render under it. */}
+      {nearBehindShuttle.map(spriteView)}
+
+      <Svg width={width} height={height} pointerEvents="none" style={StyleSheet.absoluteFill}>
         {/* Shuttle chip */}
         <Circle cx={sp3[0]} cy={sp3[1]} r={sw / 2} fill="#FFFFFF" />
         <G
@@ -403,6 +490,9 @@ export function Court3DView({
           <Circle cx={12} cy={18.4} r={3} fill={palette.shuttleGlyph} />
         </G>
       </Svg>
+
+      {/* Near figures the shuttle has passed: they now occlude it. */}
+      {nearOverShuttle.map(spriteView)}
 
       {/* Orbit / pinch surface (dock and header sit above and win touches) */}
       <View

@@ -1,5 +1,6 @@
-# CUF: load a vault drill, tilt into the 3D world view, start playback and
-# pan-rotate the camera while the rally is flying.
+# CUF: dress both players in mascots, load a vault drill, tilt into the 3D
+# world view — mascots render as full figures (far side faces the camera,
+# near side shows its back) — then start playback and pan-rotate mid-rally.
 appId: com.haritabhgupta.badmintoncourtsimulator
 ---
 - launchApp:
@@ -7,6 +8,15 @@ appId: com.haritabhgupta.badmintoncourtsimulator
 # fresh installs open on the first-run tour
 - assertVisible: "Skip tour"
 - tapOn: "Skip tour"
+# mascots for both singles players: Fox far court (P1), Koala near court (P3)
+- tapOn: "Customize"
+- assertVisible: "INCLUDED"
+- tapOn: "Fox"
+- assertVisible: "Fox · Player 1"
+- tapOn: "P3"
+- tapOn: "Koala"
+- assertVisible: "Koala · Player 3"
+- tapOn: "Close settings"
 - tapOn: "Drills"
 - tapOn: "Drill Vault"
 - assertVisible: "Four-Corner Shadow"
@@ -16,6 +26,15 @@ appId: com.haritabhgupta.badmintoncourtsimulator
 - tapOn: "3D"
 # the hint chip only renders once the court has tilted in
 - assertVisible: "drag to rotate and tilt"
+# slow yaw sweep on the standing figures: Koala's back near, Fox facing far
+- swipe:
+    start: 30%, 50%
+    end: 70%, 50%
+    duration: 1200
+- swipe:
+    start: 70%, 50%
+    end: 30%, 50%
+    duration: 1200
 - tapOn: "Play"
 # 3D playback advances through the steps on its own
 - extendedWaitUntil:
