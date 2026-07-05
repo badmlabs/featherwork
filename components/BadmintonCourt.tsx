@@ -664,6 +664,7 @@ export default function BadmintonCourt() {
             color={customizations[id].color}
             size={customizations[id].size}
             isLeftHanded={customizations[id].isLeftHanded}
+            facingAway
             icon={customizations[id].icon}
             iconType={customizations[id].iconType}
             look={effectiveLooks[id]}

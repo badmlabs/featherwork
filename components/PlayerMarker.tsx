@@ -13,8 +13,10 @@ interface PlayerMarkerProps {
   position: { x: number; y: number };
   color: string;
   size?: number;
-  /** Full-body mascot looks mirror for left-handed players. */
+  /** Mascot looks mirror so the racket sits on the handedness' screen side. */
   isLeftHanded?: boolean;
+  /** Near-court players (team 2) face away from the viewer; mascots show their back. */
+  facingAway?: boolean;
   icon?: string;
   iconType?: 'icon' | 'text' | 'photo';
   /** Selected look; mascot looks render the full-body figure. */
@@ -41,6 +43,7 @@ export function PlayerMarker({
   color,
   size,
   isLeftHanded = false,
+  facingAway = false,
   icon = 'account',
   iconType = 'icon',
   look = 'classic',
@@ -186,7 +189,11 @@ export function PlayerMarker({
             band={color}
             label={label}
             width={markerSize}
-            flipped={isLeftHanded}
+            // Raw art holds the racket on the screen's right. Facing the viewer,
+            // a right hand reads on the screen's left, so front views mirror for
+            // right-handers; back views mirror for left-handers.
+            flipped={facingAway ? isLeftHanded : !isLeftHanded}
+            facingAway={facingAway}
           />
         </Animated.View>
       )}

@@ -22,6 +22,8 @@ import { sora } from '../constants/theme';
 
 interface ArtProps {
   band: string;
+  /** Back view (near-court players): same figure minus face/front-only details. */
+  back?: boolean;
 }
 
 interface MascotArt {
@@ -52,17 +54,21 @@ const Racket = ({ transform = 'rotate(18 46 22)' }: { transform?: string }) => (
 
 // ─── Panda ───────────────────────────────────────────────────────────────
 
-const pandaHead = ({ band }: ArtProps) => (
+const pandaHead = ({ band, back }: ArtProps) => (
   <>
     <Circle cx={11} cy={13} r={6} fill="url(#mEyeDark)" stroke="#fff" strokeWidth={2} />
     <Circle cx={37} cy={13} r={6} fill="url(#mEyeDark)" stroke="#fff" strokeWidth={2} />
     <Circle cx={24} cy={27} r={15.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Rect x={10.5} y={17} width={27} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Ellipse cx={17.6} cy={27.5} rx={4} ry={5} transform="rotate(-18 17.6 27.5)" fill="url(#mEyeDark)" />
-    <Ellipse cx={30.4} cy={27.5} rx={4} ry={5} transform="rotate(18 30.4 27.5)" fill="url(#mEyeDark)" />
-    <Circle cx={18.6} cy={26.6} r={1.5} fill="#fff" />
-    <Circle cx={29.4} cy={26.6} r={1.5} fill="#fff" />
-    <Ellipse cx={24} cy={33.4} rx={2.4} ry={1.8} fill="#20242B" />
+    {!back && (
+      <>
+        <Ellipse cx={17.6} cy={27.5} rx={4} ry={5} transform="rotate(-18 17.6 27.5)" fill="url(#mEyeDark)" />
+        <Ellipse cx={30.4} cy={27.5} rx={4} ry={5} transform="rotate(18 30.4 27.5)" fill="url(#mEyeDark)" />
+        <Circle cx={18.6} cy={26.6} r={1.5} fill="#fff" />
+        <Circle cx={29.4} cy={26.6} r={1.5} fill="#fff" />
+        <Ellipse cx={24} cy={33.4} rx={2.4} ry={1.8} fill="#20242B" />
+      </>
+    )}
   </>
 );
 
@@ -82,7 +88,7 @@ const panda: MascotArt = {
     </>
   ),
   head: pandaHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Racket />
       <Path d="M20.5 40 14 48" stroke="#20242B" strokeWidth={4.6} strokeLinecap="round" />
@@ -93,26 +99,30 @@ const panda: MascotArt = {
       <Path d="M17.8 41.4 Q28 46.6 38.2 41.4 L38.2 46.2 Q28 51.2 17.8 46.2 Z" fill="#20242B" />
       <Ellipse cx={23.2} cy={64.4} rx={4.4} ry={2.6} fill="#FAF7F0" stroke="#CFC7B6" strokeWidth={1} />
       <Ellipse cx={32.8} cy={64.4} rx={4.4} ry={2.6} fill="#FAF7F0" stroke="#CFC7B6" strokeWidth={1} />
-      <G transform="translate(8.8,3) scale(0.8)">{pandaHead({ band })}</G>
+      <G transform="translate(8.8,3) scale(0.8)">{pandaHead({ band, back })}</G>
     </>
   ),
 };
 
 // ─── Fox ─────────────────────────────────────────────────────────────────
 
-const foxHead = ({ band }: ArtProps) => (
+const foxHead = ({ band, back }: ArtProps) => (
   <>
     <Path d="M7.5 6.5 L19 11.5 L10 20 Z" fill="url(#mFace)" stroke="#fff" strokeWidth={2} strokeLinejoin="round" />
     <Path d="M40.5 6.5 L29 11.5 L38 20 Z" fill="url(#mFace)" stroke="#fff" strokeWidth={2} strokeLinejoin="round" />
     <Circle cx={24} cy={27} r={15} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Ellipse cx={17} cy={14.8} rx={4.4} ry={2} fill="#fff" opacity={0.4} transform="rotate(-16 17 14.8)" />
     <Rect x={11} y={17.5} width={26} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Ellipse cx={24} cy={34.5} rx={8.5} ry={6} fill="#FDF6EC" />
-    <Circle cx={17.5} cy={26.5} r={1.9} fill="#3A2417" />
-    <Circle cx={30.5} cy={26.5} r={1.9} fill="#3A2417" />
-    <Circle cx={18.2} cy={25.9} r={0.7} fill="#fff" />
-    <Circle cx={31.2} cy={25.9} r={0.7} fill="#fff" />
-    <Ellipse cx={24} cy={31.8} rx={2.3} ry={1.8} fill="#3A2417" />
+    {!back && (
+      <>
+        <Ellipse cx={24} cy={34.5} rx={8.5} ry={6} fill="#FDF6EC" />
+        <Circle cx={17.5} cy={26.5} r={1.9} fill="#3A2417" />
+        <Circle cx={30.5} cy={26.5} r={1.9} fill="#3A2417" />
+        <Circle cx={18.2} cy={25.9} r={0.7} fill="#fff" />
+        <Circle cx={31.2} cy={25.9} r={0.7} fill="#fff" />
+        <Ellipse cx={24} cy={31.8} rx={2.3} ry={1.8} fill="#3A2417" />
+      </>
+    )}
   </>
 );
 
@@ -126,7 +136,7 @@ const fox: MascotArt = {
     </RadialGradient>
   ),
   head: foxHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Racket />
       <Path
@@ -144,17 +154,17 @@ const fox: MascotArt = {
       <Path d="M24 55.5v6.5" stroke="#3A2417" strokeWidth={4.4} strokeLinecap="round" />
       <Path d="M32 55.5v6.5" stroke="#3A2417" strokeWidth={4.4} strokeLinecap="round" />
       <Ellipse cx={28} cy={46.5} rx={9} ry={10.5} fill="#E98A3E" stroke="#fff" strokeWidth={1.8} />
-      <Ellipse cx={28} cy={44} rx={5.4} ry={5.8} fill="#FDF6EC" />
+      {!back && <Ellipse cx={28} cy={44} rx={5.4} ry={5.8} fill="#FDF6EC" />}
       <Ellipse cx={23.2} cy={64} rx={4.4} ry={2.6} fill="#FAF7F0" stroke="#CFC7B6" strokeWidth={1} />
       <Ellipse cx={32.8} cy={64} rx={4.4} ry={2.6} fill="#FAF7F0" stroke="#CFC7B6" strokeWidth={1} />
-      <G transform="translate(8.8,3) scale(0.8)">{foxHead({ band })}</G>
+      <G transform="translate(8.8,3) scale(0.8)">{foxHead({ band, back })}</G>
     </>
   ),
 };
 
 // ─── Bear · jump smash ───────────────────────────────────────────────────
 
-const bearHead = ({ band }: ArtProps) => (
+const bearHead = ({ band, back }: ArtProps) => (
   <>
     <Circle cx={11.5} cy={13} r={6} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Circle cx={36.5} cy={13} r={6} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
@@ -163,12 +173,16 @@ const bearHead = ({ band }: ArtProps) => (
     <Circle cx={24} cy={27} r={15.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Ellipse cx={17.2} cy={14.6} rx={4.4} ry={2} fill="#fff" opacity={0.35} transform="rotate(-16 17.2 14.6)" />
     <Rect x={10.5} y={17} width={27} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Ellipse cx={24} cy={34} rx={7.5} ry={5.6} fill="#EAD2AE" />
-    <Ellipse cx={24} cy={31.6} rx={2.5} ry={2} fill="#3A2417" />
-    <Circle cx={17.5} cy={26} r={1.9} fill="#3A2417" />
-    <Circle cx={30.5} cy={26} r={1.9} fill="#3A2417" />
-    <Circle cx={18.2} cy={25.4} r={0.7} fill="#fff" />
-    <Circle cx={31.2} cy={25.4} r={0.7} fill="#fff" />
+    {!back && (
+      <>
+        <Ellipse cx={24} cy={34} rx={7.5} ry={5.6} fill="#EAD2AE" />
+        <Ellipse cx={24} cy={31.6} rx={2.5} ry={2} fill="#3A2417" />
+        <Circle cx={17.5} cy={26} r={1.9} fill="#3A2417" />
+        <Circle cx={30.5} cy={26} r={1.9} fill="#3A2417" />
+        <Circle cx={18.2} cy={25.4} r={0.7} fill="#fff" />
+        <Circle cx={31.2} cy={25.4} r={0.7} fill="#fff" />
+      </>
+    )}
   </>
 );
 
@@ -184,7 +198,7 @@ const bear: MascotArt = {
     </RadialGradient>
   ),
   head: bearHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Path d="M43.2 8.6 41 5M43.2 8.6 43.6 4.4M43.2 8.6 45.6 5.2" stroke="#fff" strokeWidth={1.3} strokeLinecap="round" />
       <Circle cx={43.2} cy={10.2} r={2} fill="#fff" />
@@ -201,8 +215,8 @@ const bear: MascotArt = {
         <Ellipse cx={17.9} cy={61.5} rx={4} ry={2.7} transform="rotate(-38 17.9 61.5)" fill="#8A5C36" stroke="#66412A" strokeWidth={1} />
         <Ellipse cx={26.6} cy={63.3} rx={4} ry={2.7} transform="rotate(-30 26.6 63.3)" fill="#8A5C36" stroke="#66412A" strokeWidth={1} />
         <Ellipse cx={28} cy={44} rx={12.5} ry={11.5} fill="#A9764B" stroke="#fff" strokeWidth={1.8} />
-        <Ellipse cx={28} cy={46.5} rx={7.2} ry={7.2} fill="#EAD2AE" />
-        <G transform="translate(8.8,1.5) scale(0.8)">{bearHead({ band })}</G>
+        {!back && <Ellipse cx={28} cy={46.5} rx={7.2} ry={7.2} fill="#EAD2AE" />}
+        <G transform="translate(8.8,1.5) scale(0.8)">{bearHead({ band, back })}</G>
       </G>
       <Path d="M13 69 q9 3.5 19 0" stroke="rgba(255,255,255,0.3)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
       <Path d="M18 72.5 q7 2.5 13 0" stroke="rgba(255,255,255,0.2)" strokeWidth={1.4} fill="none" strokeLinecap="round" />
@@ -212,7 +226,7 @@ const bear: MascotArt = {
 
 // ─── Tiger · sprint ──────────────────────────────────────────────────────
 
-const tigerHead = ({ band }: ArtProps) => (
+const tigerHead = ({ band, back }: ArtProps) => (
   <>
     <Circle cx={12} cy={13.5} r={5.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Circle cx={36} cy={13.5} r={5.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
@@ -220,13 +234,17 @@ const tigerHead = ({ band }: ArtProps) => (
     <Ellipse cx={17.2} cy={14.6} rx={4.4} ry={2} fill="#fff" opacity={0.4} transform="rotate(-16 17.2 14.6)" />
     <Rect x={10.5} y={17} width={27} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
     <Path d="M24 22.8v4" stroke="#20242B" strokeWidth={2.4} strokeLinecap="round" />
-    <Path d="M10 26.5l4.4 1.6M38 26.5l-4.4 1.6" stroke="#20242B" strokeWidth={2.2} strokeLinecap="round" />
-    <Ellipse cx={24} cy={34.2} rx={7} ry={5.2} fill="#FCF6EC" />
-    <Ellipse cx={24} cy={31.6} rx={2.3} ry={1.7} fill="#20242B" />
-    <Circle cx={17.3} cy={27.2} r={1.9} fill="#20242B" />
-    <Circle cx={30.7} cy={27.2} r={1.9} fill="#20242B" />
-    <Circle cx={18} cy={26.6} r={0.7} fill="#fff" />
-    <Circle cx={31.4} cy={26.6} r={0.7} fill="#fff" />
+    {!back && (
+      <>
+        <Path d="M10 26.5l4.4 1.6M38 26.5l-4.4 1.6" stroke="#20242B" strokeWidth={2.2} strokeLinecap="round" />
+        <Ellipse cx={24} cy={34.2} rx={7} ry={5.2} fill="#FCF6EC" />
+        <Ellipse cx={24} cy={31.6} rx={2.3} ry={1.7} fill="#20242B" />
+        <Circle cx={17.3} cy={27.2} r={1.9} fill="#20242B" />
+        <Circle cx={30.7} cy={27.2} r={1.9} fill="#20242B" />
+        <Circle cx={18} cy={26.6} r={0.7} fill="#fff" />
+        <Circle cx={31.4} cy={26.6} r={0.7} fill="#fff" />
+      </>
+    )}
   </>
 );
 
@@ -241,7 +259,7 @@ const tiger: MascotArt = {
     </RadialGradient>
   ),
   head: tigerHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Path d="M3 36h8M1.5 44h9M4 52h7" stroke="rgba(255,255,255,0.38)" strokeWidth={1.8} strokeLinecap="round" />
       <G transform="rotate(12 28 46)">
@@ -257,9 +275,9 @@ const tiger: MascotArt = {
         <Ellipse cx={14.9} cy={59.3} rx={4.3} ry={2.5} transform="rotate(-22 14.9 59.3)" fill="#FAF7F0" stroke="#CFC7B6" strokeWidth={1} />
         <Ellipse cx={39.7} cy={62} rx={4.3} ry={2.5} transform="rotate(20 39.7 62)" fill="#FAF7F0" stroke="#CFC7B6" strokeWidth={1} />
         <Ellipse cx={28} cy={45.5} rx={10} ry={10.5} fill="#F49B38" stroke="#fff" strokeWidth={1.8} />
-        <Ellipse cx={28} cy={48.5} rx={5.5} ry={6} fill="#FCF6EC" />
+        {!back && <Ellipse cx={28} cy={48.5} rx={5.5} ry={6} fill="#FCF6EC" />}
         <Path d="M19 41q2.6 1.4 4.6 1M37 41q-2.6 1.4-4.6 1M25.5 36.6q2.5 1.2 5 0" stroke="#20242B" strokeWidth={1.9} fill="none" strokeLinecap="round" />
-        <G transform="translate(8.8,3) scale(0.8)">{tigerHead({ band })}</G>
+        <G transform="translate(8.8,3) scale(0.8)">{tigerHead({ band, back })}</G>
       </G>
       <Circle cx={11} cy={64} r={1.6} fill="rgba(255,255,255,0.28)" />
       <Circle cx={7} cy={60} r={1.1} fill="rgba(255,255,255,0.2)" />
@@ -269,22 +287,30 @@ const tiger: MascotArt = {
 
 // ─── Frog · flying leap ──────────────────────────────────────────────────
 
-const frogHead = ({ band }: ArtProps) => (
+const frogHead = ({ band, back }: ArtProps) => (
   <>
     <Circle cx={14} cy={12.5} r={5.8} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Circle cx={34} cy={12.5} r={5.8} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Circle cx={24} cy={27.5} r={15} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
-    <Circle cx={14} cy={12.5} r={2.9} fill="#fff" />
-    <Circle cx={34} cy={12.5} r={2.9} fill="#fff" />
-    <Circle cx={14.6} cy={13} r={1.5} fill="#20302B" />
-    <Circle cx={33.4} cy={13} r={1.5} fill="#20302B" />
-    <Circle cx={15.1} cy={12.5} r={0.6} fill="#fff" />
-    <Circle cx={33.9} cy={12.5} r={0.6} fill="#fff" />
+    {!back && (
+      <>
+        <Circle cx={14} cy={12.5} r={2.9} fill="#fff" />
+        <Circle cx={34} cy={12.5} r={2.9} fill="#fff" />
+        <Circle cx={14.6} cy={13} r={1.5} fill="#20302B" />
+        <Circle cx={33.4} cy={13} r={1.5} fill="#20302B" />
+        <Circle cx={15.1} cy={12.5} r={0.6} fill="#fff" />
+        <Circle cx={33.9} cy={12.5} r={0.6} fill="#fff" />
+      </>
+    )}
     <Ellipse cx={17.5} cy={16.2} rx={4} ry={1.9} fill="#fff" opacity={0.35} transform="rotate(-14 17.5 16.2)" />
     <Rect x={11} y={18.5} width={26} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Path d="M16 31 Q24 37.5 32 31" fill="none" stroke="#20402A" strokeWidth={2.2} strokeLinecap="round" />
-    <Circle cx={20.5} cy={27.5} r={1.2} fill="#20402A" />
-    <Circle cx={27.5} cy={27.5} r={1.2} fill="#20402A" />
+    {!back && (
+      <>
+        <Path d="M16 31 Q24 37.5 32 31" fill="none" stroke="#20402A" strokeWidth={2.2} strokeLinecap="round" />
+        <Circle cx={20.5} cy={27.5} r={1.2} fill="#20402A" />
+        <Circle cx={27.5} cy={27.5} r={1.2} fill="#20402A" />
+      </>
+    )}
   </>
 );
 
@@ -299,7 +325,7 @@ const frog: MascotArt = {
     </RadialGradient>
   ),
   head: frogHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <G transform="translate(0,-2)">
         <Racket transform="rotate(30 46 26)" />
@@ -310,8 +336,8 @@ const frog: MascotArt = {
         <Path d="M13.5 59l-2.4 2.3M13.5 59l.2 3.3M13.5 59l2.5 2.1" stroke="#58A843" strokeWidth={2} strokeLinecap="round" />
         <Path d="M42.5 59l2.4 2.3M42.5 59l-.2 3.3M42.5 59l-2.5 2.1" stroke="#58A843" strokeWidth={2} strokeLinecap="round" />
         <Ellipse cx={28} cy={44} rx={8.5} ry={9} fill="#58A843" stroke="#fff" strokeWidth={1.8} />
-        <Ellipse cx={28} cy={46.5} rx={5} ry={5.8} fill="#D9EFC2" />
-        <G transform="translate(8.8,1.5) scale(0.8)">{frogHead({ band })}</G>
+        {!back && <Ellipse cx={28} cy={46.5} rx={5} ry={5.8} fill="#D9EFC2" />}
+        <G transform="translate(8.8,1.5) scale(0.8)">{frogHead({ band, back })}</G>
       </G>
       <Path d="M16 70.5 q12 4.5 24 0" stroke="rgba(255,255,255,0.28)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
       <Circle cx={9} cy={50} r={1.2} fill="rgba(255,255,255,0.35)" />
@@ -322,17 +348,21 @@ const frog: MascotArt = {
 
 // ─── Penguin · slide save ────────────────────────────────────────────────
 
-const penguinHead = ({ band }: ArtProps) => (
+const penguinHead = ({ band, back }: ArtProps) => (
   <>
     <Circle cx={24} cy={26} r={16} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Ellipse cx={17} cy={13.6} rx={4.4} ry={2} fill="#fff" opacity={0.25} transform="rotate(-16 17 13.6)" />
-    <Ellipse cx={24} cy={30} rx={10} ry={8.6} fill="#FAF8F3" />
+    {!back && <Ellipse cx={24} cy={30} rx={10} ry={8.6} fill="#FAF8F3" />}
     <Rect x={10} y={16} width={28} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Circle cx={18.5} cy={27} r={1.9} fill="#20242B" />
-    <Circle cx={29.5} cy={27} r={1.9} fill="#20242B" />
-    <Circle cx={19.2} cy={26.4} r={0.7} fill="#fff" />
-    <Circle cx={30.2} cy={26.4} r={0.7} fill="#fff" />
-    <Path d="M21.2 30 L26.8 30 L24 34 Z" fill="#F49B38" strokeLinejoin="round" />
+    {!back && (
+      <>
+        <Circle cx={18.5} cy={27} r={1.9} fill="#20242B" />
+        <Circle cx={29.5} cy={27} r={1.9} fill="#20242B" />
+        <Circle cx={19.2} cy={26.4} r={0.7} fill="#fff" />
+        <Circle cx={30.2} cy={26.4} r={0.7} fill="#fff" />
+        <Path d="M21.2 30 L26.8 30 L24 34 Z" fill="#F49B38" strokeLinejoin="round" />
+      </>
+    )}
   </>
 );
 
@@ -346,7 +376,7 @@ const penguin: MascotArt = {
     </RadialGradient>
   ),
   head: penguinHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Path d="M2 47h9M3.5 54h11M2 61h8" stroke="rgba(255,255,255,0.35)" strokeWidth={1.8} strokeLinecap="round" />
       <Ellipse cx={30} cy={69} rx={19} ry={3} fill="rgba(0,0,0,0.3)" />
@@ -355,20 +385,20 @@ const penguin: MascotArt = {
       <Ellipse cx={6.4} cy={44} rx={3.6} ry={2.2} transform="rotate(-35 6.4 44)" fill="#F49B38" stroke="#C87A20" strokeWidth={1} />
       <Ellipse cx={5.4} cy={56.8} rx={3.6} ry={2.2} transform="rotate(8 5.4 56.8)" fill="#F49B38" stroke="#C87A20" strokeWidth={1} />
       <Ellipse cx={25.5} cy={50.5} rx={14} ry={8.8} transform="rotate(-6 25.5 50.5)" fill="#28323E" stroke="#fff" strokeWidth={1.8} />
-      <Ellipse cx={27} cy={52.3} rx={10.2} ry={5.2} transform="rotate(-6 27 52.3)" fill="#FAF8F3" />
+      {!back && <Ellipse cx={27} cy={52.3} rx={10.2} ry={5.2} transform="rotate(-6 27 52.3)" fill="#FAF8F3" />}
       <Path d="M31 55 37.5 60.5" stroke="#28323E" strokeWidth={4.4} strokeLinecap="round" />
       <Path d="M37 47.5 44 51.5" stroke="#28323E" strokeWidth={4.4} strokeLinecap="round" />
       <Ellipse cx={49.5} cy={57.5} rx={5.4} ry={4.5} fill="rgba(255,255,255,0.34)" stroke="#E5C384" strokeWidth={1.7} />
       <Path d="M47.2 55.8h4.8M47.2 59.2h4.8M49.5 54.4v6.4" stroke="#E5C384" strokeWidth={0.55} />
       <Path d="M45.4 54.8 44 52.2" stroke="#E5C384" strokeWidth={2.1} strokeLinecap="round" />
-      <G transform="translate(24.5,11) scale(0.72)">{penguinHead({ band })}</G>
+      <G transform="translate(24.5,11) scale(0.72)">{penguinHead({ band, back })}</G>
     </>
   ),
 };
 
 // ─── Koala · gold cape ───────────────────────────────────────────────────
 
-const koalaHead = ({ band }: ArtProps) => (
+const koalaHead = ({ band, back }: ArtProps) => (
   <>
     <Circle cx={9.5} cy={15} r={7.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Circle cx={38.5} cy={15} r={7.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
@@ -377,12 +407,16 @@ const koalaHead = ({ band }: ArtProps) => (
     <Circle cx={24} cy={27} r={15} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Ellipse cx={17.2} cy={15} rx={4.2} ry={2} fill="#fff" opacity={0.4} transform="rotate(-16 17.2 15)" />
     <Rect x={11} y={17.5} width={26} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Ellipse cx={24} cy={30.5} rx={3.4} ry={4.6} fill="#3A3F47" />
-    <Ellipse cx={23} cy={28.6} rx={1.1} ry={1.6} fill="#5C636D" />
-    <Circle cx={16.5} cy={26.5} r={1.9} fill="#3A3F47" />
-    <Circle cx={31.5} cy={26.5} r={1.9} fill="#3A3F47" />
-    <Circle cx={17.2} cy={25.9} r={0.7} fill="#fff" />
-    <Circle cx={32.2} cy={25.9} r={0.7} fill="#fff" />
+    {!back && (
+      <>
+        <Ellipse cx={24} cy={30.5} rx={3.4} ry={4.6} fill="#3A3F47" />
+        <Ellipse cx={23} cy={28.6} rx={1.1} ry={1.6} fill="#5C636D" />
+        <Circle cx={16.5} cy={26.5} r={1.9} fill="#3A3F47" />
+        <Circle cx={31.5} cy={26.5} r={1.9} fill="#3A3F47" />
+        <Circle cx={17.2} cy={25.9} r={0.7} fill="#fff" />
+        <Circle cx={32.2} cy={25.9} r={0.7} fill="#fff" />
+      </>
+    )}
   </>
 );
 
@@ -396,7 +430,7 @@ const koala: MascotArt = {
     </RadialGradient>
   ),
   head: koalaHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Path
         d="M20.5 34.5 Q7 41 9.5 60 Q15.5 55.5 21 58 L22.5 38 Z"
@@ -412,30 +446,34 @@ const koala: MascotArt = {
       <Path d="M24 56v5.5" stroke="#9AA2AD" strokeWidth={4.8} strokeLinecap="round" />
       <Path d="M32 56v5.5" stroke="#9AA2AD" strokeWidth={4.8} strokeLinecap="round" />
       <Ellipse cx={28} cy={47} rx={10.5} ry={10.5} fill="#9AA2AD" stroke="#fff" strokeWidth={1.8} />
-      <Ellipse cx={28} cy={49.5} rx={6} ry={6.5} fill="#D9DEE4" />
+      {!back && <Ellipse cx={28} cy={49.5} rx={6} ry={6.5} fill="#D9DEE4" />}
       <Ellipse cx={23.4} cy={63.4} rx={4} ry={2.5} fill="#6E7682" stroke="#59616C" strokeWidth={1} />
       <Ellipse cx={32.6} cy={63.4} rx={4} ry={2.5} fill="#6E7682" stroke="#59616C" strokeWidth={1} />
-      <G transform="translate(8.8,3) scale(0.8)">{koalaHead({ band })}</G>
+      <G transform="translate(8.8,3) scale(0.8)">{koalaHead({ band, back })}</G>
     </>
   ),
 };
 
 // ─── Owl · night cape ────────────────────────────────────────────────────
 
-const owlHead = ({ band }: ArtProps) => (
+const owlHead = ({ band, back }: ArtProps) => (
   <>
     <Path d="M11 6.5 L18.5 11 L11.5 15.5 Z" fill="url(#mFace)" stroke="#fff" strokeWidth={2} strokeLinejoin="round" />
     <Path d="M37 6.5 L29.5 11 L36.5 15.5 Z" fill="url(#mFace)" stroke="#fff" strokeWidth={2} strokeLinejoin="round" />
     <Circle cx={24} cy={27} r={15.5} fill="url(#mFace)" stroke="#fff" strokeWidth={2} />
     <Ellipse cx={17.2} cy={14.6} rx={4.4} ry={2} fill="#fff" opacity={0.35} transform="rotate(-16 17.2 14.6)" />
     <Rect x={10.5} y={17} width={27} height={5} rx={2.5} fill={band} stroke="#fff" strokeWidth={1} />
-    <Circle cx={17.2} cy={27.5} r={6} fill="#F3EADA" />
-    <Circle cx={30.8} cy={27.5} r={6} fill="#F3EADA" />
-    <Circle cx={17.2} cy={27.5} r={2.6} fill="#20242B" />
-    <Circle cx={30.8} cy={27.5} r={2.6} fill="#20242B" />
-    <Circle cx={18} cy={26.6} r={0.8} fill="#fff" />
-    <Circle cx={31.6} cy={26.6} r={0.8} fill="#fff" />
-    <Path d="M21.8 31.5 L26.2 31.5 L24 35.5 Z" fill="#F49B38" strokeLinejoin="round" />
+    {!back && (
+      <>
+        <Circle cx={17.2} cy={27.5} r={6} fill="#F3EADA" />
+        <Circle cx={30.8} cy={27.5} r={6} fill="#F3EADA" />
+        <Circle cx={17.2} cy={27.5} r={2.6} fill="#20242B" />
+        <Circle cx={30.8} cy={27.5} r={2.6} fill="#20242B" />
+        <Circle cx={18} cy={26.6} r={0.8} fill="#fff" />
+        <Circle cx={31.6} cy={26.6} r={0.8} fill="#fff" />
+        <Path d="M21.8 31.5 L26.2 31.5 L24 35.5 Z" fill="#F49B38" strokeLinejoin="round" />
+      </>
+    )}
   </>
 );
 
@@ -449,7 +487,7 @@ const owl: MascotArt = {
     </RadialGradient>
   ),
   head: owlHead,
-  body: ({ band }) => (
+  body: ({ band, back }) => (
     <>
       <Path
         d="M20.5 34.5 Q7 41 9.5 60 Q15.5 55.5 21 58 L22.5 38 Z"
@@ -472,11 +510,15 @@ const owl: MascotArt = {
       <Path d="M24 56v5" stroke="#9C7C58" strokeWidth={4} strokeLinecap="round" />
       <Path d="M32 56v5" stroke="#9C7C58" strokeWidth={4} strokeLinecap="round" />
       <Ellipse cx={28} cy={46.5} rx={10} ry={10.5} fill="#9C7C58" stroke="#fff" strokeWidth={1.8} />
-      <Ellipse cx={28} cy={48.5} rx={6.2} ry={7} fill="#F3EADA" />
-      <Path d="M25 45.5l3 2 3-2M25 50l3 2 3-2" stroke="#B79A72" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {!back && (
+        <>
+          <Ellipse cx={28} cy={48.5} rx={6.2} ry={7} fill="#F3EADA" />
+          <Path d="M25 45.5l3 2 3-2M25 50l3 2 3-2" stroke="#B79A72" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
       <Path d="M22.2 61l-2.2 2.6M24 61v3.2M25.8 61l2.2 2.6" stroke="#F49B38" strokeWidth={1.9} strokeLinecap="round" />
       <Path d="M30.2 61l-2.2 2.6M32 61v3.2M33.8 61l2.2 2.6" stroke="#F49B38" strokeWidth={1.9} strokeLinecap="round" />
-      <G transform="translate(8.8,3) scale(0.8)">{owlHead({ band })}</G>
+      <G transform="translate(8.8,3) scale(0.8)">{owlHead({ band, back })}</G>
     </>
   ),
 };
@@ -503,11 +545,13 @@ interface MascotViewProps {
   /** Number shown on the chip; omit to hide the chip (tiles show it though). */
   label?: string;
   width: number;
-  /** Mirror for left-handed players; the number chip stays upright. */
+  /** Mirror so the racket lands on the correct screen side; the chip stays upright. */
   flipped?: boolean;
+  /** Near-court players show their back; the chip reads as the jersey-back number. */
+  facingAway?: boolean;
 }
 
-export function MascotView({ mascot, band, label, width, flipped = false }: MascotViewProps) {
+export function MascotView({ mascot, band, label, width, flipped = false, facingAway = false }: MascotViewProps) {
   const art = MASCOT_ART[mascot];
   const height = width * MASCOT_ASPECT;
   const s = width / 56;
@@ -522,7 +566,7 @@ export function MascotView({ mascot, band, label, width, flipped = false }: Masc
           <Defs>
             <D />
           </Defs>
-          <B band={band} />
+          <B band={band} back={facingAway} />
         </Svg>
       </View>
       {label != null && (
