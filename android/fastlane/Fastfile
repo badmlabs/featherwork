@@ -10,10 +10,12 @@ platform :android do
       json_key: 'play-store-credentials.json',
       aab: './app/build/outputs/bundle/release/app-release.aab',
       package_name: 'com.haritabhgupta.badmintoncourtsimulator',
-      skip_upload_metadata: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true,
-      skip_upload_changelogs: true
+      # Listing-as-code: title/descriptions/graphics/changelogs live in
+      # fastlane/metadata/android/en-US and are re-asserted on every deploy.
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      skip_upload_changelogs: false
     )
   end
 end
